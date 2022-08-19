@@ -1,64 +1,69 @@
+"use strict";
+
 function zeroPad(n) {
     return ("0" + n).substr(-2);
 }
 
-var MyDate = function() {
-    function MyDate(dateStr) {
+"use strict";
+
+class MyDate {
+    constructor(dateStr) {
         this.date = dateStr ? new Date(dateStr) : new Date();
     }
-    MyDate.prototype.valueOf = function() {
+    valueOf() {
         return this.date;
-    };
-    MyDate.prototype.formattedTime = function() {
+    }
+    formattedTime() {
         var hours12 = this.date.getHours() % 12;
         hours12 = hours12 == 0 ? 12 : hours12;
         var paddedMinute = zeroPad(this.date.getMinutes());
-        return "".concat(hours12, ":").concat(paddedMinute);
-    };
-    MyDate.prototype.formattedDate = function() {
+        return `${hours12}:${paddedMinute}`;
+    }
+    formattedDate() {
         var month = require("locale").month(this.date, 1);
         var dayOfMonth = this.date.getDate();
-        return "".concat(month, " ").concat(dayOfMonth);
-    };
-    MyDate.prototype.formattedDateTime = function() {
-        return "".concat(this.formattedDate(), " ").concat(this.formattedTime());
-    };
-    MyDate.prototype.unixTimestampMillis = function() {
+        return `${month} ${dayOfMonth}`;
+    }
+    formattedDateTime() {
+        return `${this.formattedDate()} ${this.formattedTime()}`;
+    }
+    unixTimestampMillis() {
         return this.date.getTime();
-    };
-    MyDate.prototype.totalMillisToEvent = function() {
+    }
+    totalMillisToEvent() {
         var now = new Date();
         return this.date.getTime() - now.getTime();
-    };
-    MyDate.prototype.totalSecondsToEvent = function() {
+    }
+    secondsUntil() {
         var now = new Date();
         return (this.date.getTime() - now.getTime()) / 1e3 + 1;
-    };
-    MyDate.prototype.minutesUntil = function() {
+    }
+    minutesUntil() {
         var now = new Date();
         return (this.date.getTime() - now.getTime()) / 1e3 / 60 + 1;
-    };
-    MyDate.prototype.timeRemainingAsString = function() {
-        var totalSecondsToEvent = this.totalSecondsToEvent();
-        var sign = totalSecondsToEvent < 0 ? "-" : "";
-        var totalSecondsToEventAbs = Math.abs(totalSecondsToEvent);
-        var totalMinutesToEventAbs = Math.floor(totalSecondsToEventAbs / 60);
+    }
+    timeRemainingAsString() {
+        var secondsUntil = this.secondsUntil();
+        var sign = secondsUntil < 0 ? "-" : "";
+        var secondsUntilAbs = Math.abs(secondsUntil);
+        var totalMinutesToEventAbs = Math.floor(secondsUntilAbs / 60);
         var hoursToEventAbs = Math.floor(totalMinutesToEventAbs / 60);
         var minutesToEventAbs = totalMinutesToEventAbs % 60;
         if (hoursToEventAbs == 0) {
-            return "".concat(sign).concat(minutesToEventAbs);
+            return `${sign}${minutesToEventAbs}`;
         } else {
-            return "".concat(sign).concat(hoursToEventAbs, ":").concat(zeroPad(minutesToEventAbs));
+            return `${sign}${hoursToEventAbs}:${zeroPad(minutesToEventAbs)}`;
         }
-    };
-    MyDate.prototype.equals = function(other) {
+    }
+    equals(other) {
         return this.date.getTime() == other.date.getTime();
-    };
-    return MyDate;
-}();
+    }
+}
 
-var CalendarEvent = function() {
-    function CalendarEvent(clockFace, alarmHandler, name, startTime, endTime) {
+"use strict";
+
+class CalendarEvent {
+    constructor(clockFace, alarmHandler, name, startTime, endTime) {
         this.alarmHandler = alarmHandler;
         this.clockFace = clockFace;
         this.name = name;
@@ -68,7 +73,7 @@ var CalendarEvent = function() {
         this.alarm = undefined;
         this.id = undefined;
     }
-    CalendarEvent.prototype.update = function(event) {
+    update(event) {
         event.id = this.id;
         event.alarm = this.alarm;
         event.skipped = this.skipped;
@@ -77,45 +82,43 @@ var CalendarEvent = function() {
         this.startTime = event.startTime;
         this.endTime = event.endTime;
         return isModified;
-    };
-    CalendarEvent.prototype.setId = function(id) {
+    }
+    setId(id) {
         this.id = id;
-    };
-    CalendarEvent.prototype.toggleSkip = function() {
+    }
+    toggleSkip() {
         this.skipped = !this.skipped;
         this.initAlarm();
         return this.skipped;
-    };
-    CalendarEvent.prototype.initAlarm = function() {
-        var _this = this;
+    }
+    initAlarm() {
         if (this.alarm) {
             clearTimeout(this.alarm);
         }
         this.alarm = undefined;
         if (!this.skipped && this.endTime.totalMillisToEvent() > 0) {
-            this.alarm = setTimeout(function() {
-                _this.alarmHandler(_this.clockFace, _this);
+            this.alarm = setTimeout(() => {
+                this.alarmHandler(this.clockFace, this);
             }, this.endTime.totalMillisToEvent());
         }
-    };
-    CalendarEvent.prototype.displayName = function() {
+    }
+    displayName() {
         return this.name.substr(0, 14);
-    };
-    CalendarEvent.prototype.displayTimeRemaining = function() {
+    }
+    displayTimeRemaining() {
         return this.endTime.timeRemainingAsString();
-    };
-    return CalendarEvent;
-}();
+    }
+}
 
-var Events = function() {
-    function Events(clockFace, events, alarmHandler) {
+class Events {
+    constructor(clockFace, events, alarmHandler) {
         this.clockFace = clockFace;
         this.selectedEvent = 0;
         this.events = events;
         this.refocusTimeout = undefined;
         this.alarmHandler = alarmHandler;
     }
-    Events.prototype.updateFromCalendar = function(calendar) {
+    updateFromCalendar(calendar) {
         var updated = 0;
         var now = new Date();
         var maxEventTimeOffset = 1e3 * 60 * 60 * 24;
@@ -139,8 +142,8 @@ var Events = function() {
         this.selectUpcomingEvent();
         this.initAlarms();
         return updated;
-    };
-    Events.prototype.addEvent = function(event) {
+    }
+    addEvent(event) {
         for (var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             if (e.id == event.id) {
@@ -149,19 +152,19 @@ var Events = function() {
         }
         this.events.push(event);
         return true;
-    };
-    Events.prototype.sortEvents = function() {
-        this.events = this.events.sort(function(e1, e2) {
+    }
+    sortEvents() {
+        this.events = this.events.sort((e1, e2) => {
             return e1.endTime.unixTimestampMillis() - e2.endTime.unixTimestampMillis();
         });
-    };
-    Events.prototype.initAlarms = function() {
+    }
+    initAlarms() {
         for (var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             e.initAlarm();
         }
-    };
-    Events.prototype.selectEvent = function(event) {
+    }
+    selectEvent(event) {
         for (var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             if (e == event) {
@@ -170,63 +173,64 @@ var Events = function() {
             }
         }
         return this.getSelectedEvent();
-    };
-    Events.prototype.selectUpcomingEvent = function() {
+    }
+    selectUpcomingEvent() {
         var soonestEventSeconds = Number.MAX_VALUE;
         var soonestEventIndex = this.events.length - 1;
         for (var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
-            var nextEventSeconds = e.endTime.totalSecondsToEvent();
+            var nextEventSeconds = e.endTime.secondsUntil();
             if (!e.skipped && nextEventSeconds >= 0 && nextEventSeconds < soonestEventSeconds) {
-                soonestEventSeconds = e.endTime.totalSecondsToEvent();
+                soonestEventSeconds = e.endTime.secondsUntil();
                 soonestEventIndex = i;
             }
         }
         this.selectedEvent = soonestEventIndex;
         return this.getSelectedEvent();
-    };
-    Events.prototype.selectNextEvent = function() {
+    }
+    selectNextEvent() {
         if (this.selectedEvent < this.events.length - 1) {
             this.selectedEvent++;
         }
         this.setRefocusTimeout();
         return this.getSelectedEvent();
-    };
-    Events.prototype.selectPreviousEvent = function() {
+    }
+    selectPreviousEvent() {
         if (this.selectedEvent > 0) {
             this.selectedEvent--;
         }
         this.setRefocusTimeout();
         return this.getSelectedEvent();
-    };
-    Events.prototype.getSelectedEvent = function() {
+    }
+    getSelectedEvent() {
         return this.events[this.selectedEvent];
-    };
-    Events.prototype.setRefocusTimeout = function() {
-        var _this = this;
+    }
+    setRefocusTimeout() {
         this.clearRefocusTimeout();
-        this.refocusTimeout = setTimeout(function() {
-            var e = _this.selectUpcomingEvent();
-            _this.clearRefocusTimeout();
-            _this.clockFace.redrawAll(_this);
+        this.refocusTimeout = setTimeout(() => {
+            var e = this.selectUpcomingEvent();
+            this.clearRefocusTimeout();
+            this.clockFace.redrawAll(this);
         }, 5e3);
-    };
-    Events.prototype.clearRefocusTimeout = function() {
+    }
+    clearRefocusTimeout() {
         if (this.refocusTimeout) {
             clearTimeout(this.refocusTimeout);
         }
         this.refocusTimeout = undefined;
-    };
-    return Events;
-}();
+    }
+}
 
-var CalendarUpdater = function() {
-    function CalendarUpdater(clockFace, events) {
+"use strict";
+
+class CalendarUpdater {
+    constructor(clockFace, events) {
         this.clockFace = clockFace;
         this.events = events;
+        console.log("1", this.events);
     }
-    CalendarUpdater.prototype.forceCalendarUpdate = function() {
-        var _this = this;
+    forceCalendarUpdate() {
+        console.log("2", this.events);
         var cal = require("Storage").readJSON("android.calendar.json", true) || [];
         if (NRF.getSecurityStatus().connected) {
             E.showPrompt("Do you want to also clear the internal database first?", {
@@ -235,65 +239,72 @@ var CalendarUpdater = function() {
                     No: 2,
                     Cancel: 3
                 }
-            }).then(function(v) {
+            }).then(v => {
+                console.log("3", this.events);
                 switch (v) {
                   case 1:
                     require("Storage").writeJSON("android.calendar.json", []);
                     cal = [];
 
                   case 2:
-                    _this.gbSend({
+                    console.log("4", this.events);
+                    this.gbSend(JSON.stringify({
                         t: "force_calendar_sync",
-                        ids: cal.map(function(e) {
-                            return e.id;
-                        })
+                        ids: cal.map(e => e.id)
+                    }));
+                    E.showAlert("Request sent to the phone").then(() => {
+                        this.readCalendarDataAndUpdate();
                     });
-                    E.showAlert("Request sent to the phone").then(_this.readCalendarDataAndUpdate);
                     break;
 
                   case 3:
                   default:
-                    _this.clockFace.redrawAll(_this.events);
+                    this.clockFace.redrawAll(this.events);
                     return;
                 }
             });
         } else {
-            E.showAlert("You are not connected").then(this.clockFace.redrawAll);
+            E.showAlert("You are not connected").then(() => {
+                this.clockFace.redrawAll(this.events);
+            });
         }
-    };
-    CalendarUpdater.prototype.gbSend = function(message) {
+    }
+    gbSend(message) {
         Bluetooth.println("");
         Bluetooth.println(JSON.stringify(message));
-    };
-    CalendarUpdater.prototype.readCalendarDataAndUpdate = function() {
+    }
+    readCalendarDataAndUpdate() {
+        console.log("5", this.events);
         var calendarJSON = require("Storage").readJSON("android.calendar.json", true);
         if (!calendarJSON) {
-            E.showAlert("No calendar data found.").then(function() {
-                E.showAlert().then(function() {
+            E.showAlert("No calendar data found.").then(() => {
+                E.showAlert().then(() => {
+                    console.log("6", this.events);
                     this.clockFace.redrawAll(this.events);
                 });
             });
             return;
         } else {
             var updateCount = this.events.updateFromCalendar(calendarJSON);
-            E.showAlert("Got calendar data. Updated " + updateCount + ".").then(function() {
-                E.showAlert().then(function() {
+            E.showAlert("Got calendar data. Updated " + updateCount + ".").then(() => {
+                E.showAlert().then(() => {
+                    console.log("7", this.events);
                     this.clockFace.redrawAll(this.events);
                 });
             });
         }
-    };
-    return CalendarUpdater;
-}();
+    }
+}
 
-var ClockFace = function() {
-    function ClockFace() {}
-    ClockFace.prototype.redrawAll = function(eventsObj) {
+"use strict";
+
+class ClockFace {
+    redrawAll(eventsObj) {
         g.clear();
         Bangle.drawWidgets();
         this.draw(eventsObj);
-    };
-    ClockFace.prototype.draw = function(eventsObj) {
+    }
+    draw(eventsObj) {
         var now = new MyDate();
         var e = eventsObj.getSelectedEvent();
         if (!e) {
@@ -324,8 +335,6 @@ var ClockFace = function() {
         g.setFont("5x7Numeric7Seg", 2);
         g.setFontAlign(-1, 1);
         g.drawString(leftTime, 5, g.getHeight() - 2, true);
-        g.setFontAlign(0, 1);
-        g.drawString(midTime, g.getWidth() / 2, g.getHeight() - 2, true);
         g.setFontAlign(1, 1);
         g.drawString(rightTime, g.getWidth() - 5, g.getHeight() - 2, true);
         if (e.skipped) {
@@ -336,36 +345,35 @@ var ClockFace = function() {
             g.drawLine(g.getWidth() - 1, 0, 0, g.getHeight() - 1);
             g.drawLine(g.getWidth() - 2, 0, 0, g.getHeight() - 2);
         }
-    };
-    return ClockFace;
-}();
+    }
+}
 
-var Meter = function() {
-    function Meter(event) {
+class Meter {
+    constructor(event) {
         this.minutesPerSegment = 30;
         this.maxSegmentCount = 10;
         this.eventStart = event.startTime.date;
         this.eventEnd = event.endTime.date;
         this.segmentCountInt = this.segmentCount(event);
         this.maxMinutesInMeter = this.segmentCountInt * this.minutesPerSegment;
-        this.meterStartTime = new Date(event.endTime.date + -this.maxMinutesInMeter * 6e4);
+        this.meterStartTime = new Date(event.endTime.date.getTime() + -this.maxMinutesInMeter * 6e4);
         this.meterEndTime = event.endTime.date;
         this.padding = 5;
         this.height = 22;
         this.meterTopOffsetPos = g.getHeight() * .77;
         this.maxMeterWidth = g.getWidth() - this.padding * 2;
     }
-    Meter.prototype.segmentCount = function(event) {
+    segmentCount(event) {
         var segmentCount = Math.ceil(event.endTime.minutesUntil() / this.minutesPerSegment);
-        if (segmentCount == 0) {
+        if (segmentCount <= 1) {
             segmentCount = 1;
         }
         if (segmentCount > this.maxSegmentCount) {
             segmentCount = this.maxSegmentCount;
         }
         return segmentCount;
-    };
-    Meter.prototype.draw = function() {
+    }
+    draw() {
         var originalColor = g.getColor();
         g.setColor("#00FF00");
         this.drawMeterFill(this.meterStartTime, this.meterEndTime);
@@ -393,13 +401,13 @@ var Meter = function() {
             g.drawLine(x - 1, this.meterTopOffsetPos, x - 1, this.meterTopOffsetPos + this.height);
         }
         g.setColor(originalColor);
-    };
-    Meter.prototype.drawMeterFill = function(startDate, endDate) {
+    }
+    drawMeterFill(startDate, endDate) {
         var startXPos = this.dateToXPos(startDate);
         var endXPos = this.dateToXPos(endDate);
         g.fillRect(startXPos, this.meterTopOffsetPos, endXPos, this.meterTopOffsetPos + this.height);
-    };
-    Meter.prototype.dateToXPos = function(date) {
+    }
+    dateToXPos(date) {
         var minute = (date.getTime() - this.meterStartTime.getTime()) / 1e3 / 60;
         var percentage = minute / this.maxMinutesInMeter;
         if (percentage < 0) {
@@ -410,9 +418,10 @@ var Meter = function() {
         }
         var maxMeterWidth = g.getWidth() - this.padding * 2;
         return maxMeterWidth * percentage + this.padding;
-    };
-    return Meter;
-}();
+    }
+}
+
+"use strict";
 
 function setupBangleEvents(clockFace, minuteInterval, eventsObj) {
     Bangle.on("swipe", function(directionLR, directionUD) {
@@ -429,7 +438,7 @@ function setupBangleEvents(clockFace, minuteInterval, eventsObj) {
             var skipped = e.toggleSkip();
             clockFace.redrawAll(eventsObj);
             if (skipped) {
-                setTimeout(function() {
+                setTimeout(() => {
                     eventsObj.selectUpcomingEvent();
                     clockFace.redrawAll(eventsObj);
                 }, 200);
@@ -439,11 +448,12 @@ function setupBangleEvents(clockFace, minuteInterval, eventsObj) {
             new CalendarUpdater(clockFace, eventsObj).forceCalendarUpdate();
         }
     });
-    Bangle.on("lcdPower", function(on) {
-        if (minuteInterval) clearInterval(minuteInterval);
-        minuteInterval = undefined;
+    Bangle.on("lcdPower", on => {
+        if (minuteInterval) {
+            clearInterval(minuteInterval);
+        }
         if (on) {
-            minuteInterval = setInterval(function() {
+            minuteInterval = setInterval(() => {
                 clockFace.draw(eventsObj);
             }, 60 * 1e3);
             clockFace.draw(eventsObj);
@@ -451,30 +461,26 @@ function setupBangleEvents(clockFace, minuteInterval, eventsObj) {
     });
 }
 
+"use strict";
+
 require("Font7x11Numeric7Seg").add(Graphics);
 
 var clockFace = new ClockFace();
 
 function eventAlarmHandler(clockFace, event) {
     Bangle.setLCDPower(1);
-    Bangle.buzz(1e3).then(function() {
-        return new Promise(function(resolve) {
-            return setTimeout(resolve, 500);
-        });
-    }).then(function() {
+    Bangle.buzz(1e3).then(() => {
+        return new Promise(resolve => setTimeout(resolve, 500));
+    }).then(() => {
         return Bangle.buzz(1e3);
-    }).then(function() {
-        return new Promise(function(resolve) {
-            return setTimeout(resolve, 500);
-        });
-    }).then(function() {
+    }).then(() => {
+        return new Promise(resolve => setTimeout(resolve, 500));
+    }).then(() => {
         return Bangle.buzz(1e3);
     });
 }
 
 var eventsObj = new Events(clockFace, [], eventAlarmHandler);
-
-eventsObj.sortEvents();
 
 eventsObj.initAlarms();
 
@@ -488,7 +494,7 @@ Bangle.loadWidgets();
 
 clockFace.redrawAll(eventsObj);
 
-var minuteInterval = setInterval(function() {
+var minuteInterval = setInterval(() => {
     clockFace.redrawAll(eventsObj);
 }, 60 * 1e3);
 

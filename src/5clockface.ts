@@ -5,7 +5,7 @@ class ClockFace {
         this.draw(eventsObj);
     }
 
-    draw(eventsObj) {
+    draw(eventsObj: Events) {
         var now = new MyDate();
         var e = eventsObj.getSelectedEvent();
         if(!e) {
@@ -76,7 +76,7 @@ class Meter {
     meterTopOffsetPos: number;
     maxMeterWidth: number;
 
-    constructor(event) {
+    constructor(event: CalendarEvent) {
         // Meter params
         this.minutesPerSegment = 30;
         this.maxSegmentCount = 10;
@@ -87,7 +87,7 @@ class Meter {
         this.segmentCountInt = this.segmentCount(event);
         this.maxMinutesInMeter = this.segmentCountInt * this.minutesPerSegment;
 
-        this.meterStartTime = new Date(event.endTime.date + -this.maxMinutesInMeter * 60000);
+        this.meterStartTime = new Date(event.endTime.date.getTime() + -this.maxMinutesInMeter * 60000);
         this.meterEndTime = event.endTime.date;
 
         // Draw params
@@ -97,7 +97,7 @@ class Meter {
         this.maxMeterWidth = g.getWidth() - (this.padding*2);
     }
 
-    segmentCount(event) {
+    segmentCount(event: CalendarEvent) {
         // Determine how many segments to use for the meter
         var segmentCount = Math.ceil(event.endTime.minutesUntil() / this.minutesPerSegment);
         if(segmentCount <= 1) {

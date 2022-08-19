@@ -1,5 +1,5 @@
 
-function setupBangleEvents(clockFace, minuteInterval, eventsObj) {
+function setupBangleEvents(clockFace: ClockFace, minuteInterval: NodeJS.Timer, eventsObj: Events) {
 
     Bangle.on('swipe', function(directionLR, directionUD) {
         if(directionLR == -1 && directionUD == 0) {
@@ -27,8 +27,9 @@ function setupBangleEvents(clockFace, minuteInterval, eventsObj) {
     });
 
     Bangle.on('lcdPower', on=>{
-        if (minuteInterval) clearInterval(minuteInterval);
-        var minuteInterval = undefined;
+        if (minuteInterval) {
+            clearInterval(minuteInterval);
+        }
         if (on) {
             minuteInterval = setInterval(()=>{clockFace.draw(eventsObj)}, 60*1000);
             clockFace.draw(eventsObj); // draw immediately

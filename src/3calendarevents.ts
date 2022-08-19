@@ -66,10 +66,10 @@ class Events {
     clockFace: ClockFace;
     selectedEvent: number;
     events: CalendarEvent[];
-    refocusTimeout: NodeJS.Timeout;
+    refocusTimeout: NodeJS.Timeout | undefined;
     alarmHandler: (clockFace: ClockFace, event: CalendarEvent) => void;
 
-    constructor(clockFace, events, alarmHandler) {
+    constructor(clockFace: ClockFace, events: CalendarEvent[], alarmHandler: (clockFace: ClockFace, event: CalendarEvent) => void) {
         this.clockFace = clockFace;
         this.selectedEvent = 0;
         this.events = events;
@@ -77,7 +77,7 @@ class Events {
         this.alarmHandler = alarmHandler;
     }
 
-    updateFromCalendar(calendar) {
+    public updateFromCalendar(calendar: any) {
         var updated = 0;
         var now = new Date();
         var maxEventTimeOffset = 1000*60*60*24;
@@ -106,7 +106,7 @@ class Events {
         return updated;
     }
 
-    addEvent(event: CalendarEvent): boolean {
+    public addEvent(event: CalendarEvent): boolean {
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             if(e.id == event.id) {
@@ -117,20 +117,20 @@ class Events {
         return true;
     }
 
-    sortEvents() {
+    public sortEvents() {
         this.events = this.events.sort((e1, e2) => {
             return e1.endTime.unixTimestampMillis() - e2.endTime.unixTimestampMillis();
         });
     }
 
-    initAlarms() {
+    public initAlarms() {
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             e.initAlarm();
         }
     }
 
-    selectEvent(event) {
+    public selectEvent(event: CalendarEvent) {
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             if(e == event) {
@@ -141,14 +141,14 @@ class Events {
         return this.getSelectedEvent();
     }
 
-    selectUpcomingEvent() {
+    public selectUpcomingEvent() {
         var soonestEventSeconds = Number.MAX_VALUE;
         var soonestEventIndex = this.events.length-1;
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
-            var nextEventSeconds = e.endTime.totalSecondsToEvent();
+            var nextEventSeconds = e.endTime.secondsUntil();
             if(!e.skipped && nextEventSeconds >= 0 && nextEventSeconds < soonestEventSeconds) {
-                soonestEventSeconds = e.endTime.totalSecondsToEvent();
+                soonestEventSeconds = e.endTime.secondsUntil();
                 soonestEventIndex = i
             }
         }
@@ -157,7 +157,7 @@ class Events {
         return this.getSelectedEvent();
     }
 
-    selectNextEvent() {
+    public selectNextEvent() {
         if(this.selectedEvent < this.events.length-1) {
             this.selectedEvent++;
         }
@@ -165,7 +165,7 @@ class Events {
         return this.getSelectedEvent();
     }
 
-    selectPreviousEvent() {
+    public selectPreviousEvent() {
         if(this.selectedEvent > 0) {
             this.selectedEvent--;
         }
@@ -173,11 +173,11 @@ class Events {
         return this.getSelectedEvent();
     }
 
-    getSelectedEvent() {
+    public getSelectedEvent() {
         return this.events[this.selectedEvent];
     }
 
-    setRefocusTimeout() {
+    public setRefocusTimeout() {
         this.clearRefocusTimeout();
         this.refocusTimeout = setTimeout(()=>{
             var e = this.selectUpcomingEvent();
@@ -186,7 +186,7 @@ class Events {
         }, 5000);
     }
 
-    clearRefocusTimeout() {
+    public clearRefocusTimeout() {
         if(this.refocusTimeout) {
             clearTimeout(this.refocusTimeout);
         }
