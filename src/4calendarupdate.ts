@@ -19,7 +19,7 @@ class CalendarUpdater {
                         require("Storage").writeJSON("android.calendar.json", []);
                         cal = [];
                     case 2:
-                        this.gbSend({t:"force_calendar_sync", ids: cal.map(e=>e.id)});
+                        this.gbSend(JSON.stringify({t:"force_calendar_sync", ids: cal.map((e: any)=>e.id)}));
                         E.showAlert("Request sent to the phone").then(this.readCalendarDataAndUpdate);
                         break;
                     case 3:
@@ -33,7 +33,7 @@ class CalendarUpdater {
         }
     }
 
-    gbSend(message) {
+    gbSend(message: string) {
         Bluetooth.println("");
         Bluetooth.println(JSON.stringify(message));
     }
@@ -41,16 +41,16 @@ class CalendarUpdater {
     readCalendarDataAndUpdate() {
         var calendarJSON = require("Storage").readJSON("android.calendar.json",true);
         if(!calendarJSON) {
-            E.showAlert("No calendar data found.").then(function() {
-                E.showAlert().then(function() {
+            E.showAlert("No calendar data found.").then(() => {
+                E.showAlert().then(() => {
                     this.clockFace.redrawAll(this.events);
                 });
             });
             return;
         } else {
             var updateCount = this.events.updateFromCalendar(calendarJSON);
-            E.showAlert("Got calendar data. Updated "+updateCount+".").then(function() {
-                E.showAlert().then(function() {
+            E.showAlert("Got calendar data. Updated "+updateCount+".").then(() => {
+                E.showAlert().then(() => {
                     this.clockFace.redrawAll(this.events);
                 });
             });

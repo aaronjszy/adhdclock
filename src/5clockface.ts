@@ -1,5 +1,5 @@
 class ClockFace {
-    redrawAll(eventsObj) {
+    redrawAll(eventsObj: Events) {
         g.clear();
         Bangle.drawWidgets();
         this.draw(eventsObj);
@@ -46,8 +46,6 @@ class ClockFace {
         g.setFont("5x7Numeric7Seg", 2);
         g.setFontAlign(-1, 1);
         g.drawString(leftTime, 5, g.getHeight()-2, true);
-        g.setFontAlign(0, 1);
-        g.drawString(midTime, g.getWidth()/2, g.getHeight()-2, true);
         g.setFontAlign(1, 1);
         g.drawString(rightTime, g.getWidth()-5, g.getHeight()-2, true);
 
@@ -102,7 +100,7 @@ class Meter {
     segmentCount(event) {
         // Determine how many segments to use for the meter
         var segmentCount = Math.ceil(event.endTime.minutesUntil() / this.minutesPerSegment);
-        if(segmentCount == 0) {
+        if(segmentCount <= 1) {
             segmentCount = 1;
         }
         if(segmentCount > this.maxSegmentCount) {

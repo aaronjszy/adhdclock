@@ -22,7 +22,7 @@ class g {
 
 class Bangle {
     static drawWidgets() {}
-    static on(eventName: string, handler: any) {}
+    static on(eventName: string, handler: (...args: any[]) => void) {}
     static setUI(msg: string) {}
     static loadWidgets() {}
     static buzz(duration: number): Promise<any> {

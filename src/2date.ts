@@ -36,7 +36,7 @@ class MyDate {
         return this.date.getTime()-now.getTime();
     }
 
-    totalSecondsToEvent(): number {
+    secondsUntil(): number {
         var now = new Date();
         return ((this.date.getTime()-now.getTime()) / 1000)+1;
     }
@@ -47,10 +47,10 @@ class MyDate {
     }
 
     timeRemainingAsString(): string {
-        var totalSecondsToEvent = this.totalSecondsToEvent();
-        var sign = (totalSecondsToEvent < 0) ? "-" : "";
-        var totalSecondsToEventAbs = Math.abs(totalSecondsToEvent)
-        var totalMinutesToEventAbs = Math.floor(totalSecondsToEventAbs / 60);
+        var secondsUntil = this.secondsUntil();
+        var sign = (secondsUntil < 0) ? "-" : "";
+        var secondsUntilAbs = Math.abs(secondsUntil)
+        var totalMinutesToEventAbs = Math.floor(secondsUntilAbs / 60);
         var hoursToEventAbs = Math.floor(totalMinutesToEventAbs / 60);
         var minutesToEventAbs = totalMinutesToEventAbs % 60;
 

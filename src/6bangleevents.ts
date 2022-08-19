@@ -26,9 +26,9 @@ function setupBangleEvents(clockFace, minuteInterval, eventsObj) {
         }
     });
 
-    Bangle.on('lcdPower',on=>{
+    Bangle.on('lcdPower', on=>{
         if (minuteInterval) clearInterval(minuteInterval);
-        minuteInterval = undefined;
+        var minuteInterval = undefined;
         if (on) {
             minuteInterval = setInterval(()=>{clockFace.draw(eventsObj)}, 60*1000);
             clockFace.draw(eventsObj); // draw immediately

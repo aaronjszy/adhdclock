@@ -6,8 +6,8 @@ class CalendarEvent {
     startTime: MyDate;
     endTime: MyDate;
     skipped: boolean;
-    alarm: NodeJS.Timeout;
-    id: number;
+    alarm: NodeJS.Timeout | undefined;
+    id: number | undefined;
 
     constructor(clockFace: ClockFace, alarmHandler: (clockFace: ClockFace, event: CalendarEvent) => void, name: string, startTime: MyDate, endTime: MyDate) {
         this.alarmHandler = alarmHandler;
@@ -20,7 +20,7 @@ class CalendarEvent {
         this.id = undefined;
     }
 
-    update(event) {
+    update(event: CalendarEvent) {
         event.id = this.id;
         event.alarm = this.alarm;
         event.skipped = this.skipped;
@@ -33,7 +33,7 @@ class CalendarEvent {
         return isModified;
     }
 
-    setId(id) {
+    setId(id: number) {
         this.id = id;
     }
 
@@ -106,7 +106,7 @@ class Events {
         return updated;
     }
 
-    addEvent(event) {
+    addEvent(event: CalendarEvent): boolean {
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             if(e.id == event.id) {
