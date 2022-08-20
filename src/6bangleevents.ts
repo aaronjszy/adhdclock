@@ -26,7 +26,17 @@ function setupBangleEvents(clockFace: ClockFace, minuteInterval: NodeJS.Timer, e
         }
     });
 
-    Bangle.on('lcdPower', on=>{
+    Bangle.on('touch', function(button, xy) {
+        if(xy.y > 50) {
+            // Toggle countdown between event start and event end
+            eventsObj.getSelectedEvent().toggleTrackedEventBoundary();
+
+            // Redraw to show the updated state
+            clockFace.redrawAll(eventsObj);
+        }
+    });
+
+    Bangle.on('lcdPower', on => {
         if (minuteInterval) {
             clearInterval(minuteInterval);
         }

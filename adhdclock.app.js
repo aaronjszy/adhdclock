@@ -30,7 +30,7 @@ class MyDate {
     unixTimestampMillis() {
         return this.date.getTime();
     }
-    totalMillisToEvent() {
+    millisUntil() {
         var now = new Date();
         return this.date.getTime() - now.getTime();
     }
@@ -62,6 +62,13 @@ class MyDate {
 
 "use strict";
 
+var TrackedEventBoundary;
+
+(function(TrackedEventBoundary) {
+    TrackedEventBoundary[TrackedEventBoundary["START"] = 0] = "START";
+    TrackedEventBoundary[TrackedEventBoundary["END"] = 1] = "END";
+})(TrackedEventBoundary || (TrackedEventBoundary = {}));
+
 class CalendarEvent {
     constructor(clockFace, alarmHandler, name, startTime, endTime) {
         this.alarmHandler = alarmHandler;
@@ -70,13 +77,17 @@ class CalendarEvent {
         this.startTime = startTime;
         this.endTime = endTime;
         this.skipped = false;
-        this.alarm = undefined;
+        this.startAlarm = undefined;
+        this.endAlarm = undefined;
         this.id = undefined;
+        this.trackedEventBoundary = TrackedEventBoundary.END;
     }
     update(event) {
         event.id = this.id;
-        event.alarm = this.alarm;
+        event.startAlarm = this.startAlarm;
+        event.endAlarm = this.endAlarm;
         event.skipped = this.skipped;
+        event.trackedEventBoundary = this.trackedEventBoundary;
         var isModified = JSON.stringify(event) != JSON.stringify(this);
         this.name = event.name;
         this.startTime = event.startTime;
@@ -88,25 +99,50 @@ class CalendarEvent {
     }
     toggleSkip() {
         this.skipped = !this.skipped;
-        this.initAlarm();
+        this.initAlarms();
         return this.skipped;
     }
-    initAlarm() {
-        if (this.alarm) {
-            clearTimeout(this.alarm);
+    toggleTrackedEventBoundary() {
+        this.trackedEventBoundary = this.trackedEventBoundary == TrackedEventBoundary.END ? TrackedEventBoundary.START : TrackedEventBoundary.END;
+    }
+    getTrackedEventBoundary() {
+        return this.trackedEventBoundary;
+    }
+    getTrackedEventDate() {
+        if (this.trackedEventBoundary == TrackedEventBoundary.START) {
+            return this.startTime;
         }
-        this.alarm = undefined;
-        if (!this.skipped && this.endTime.totalMillisToEvent() > 0) {
-            this.alarm = setTimeout(() => {
+        return this.endTime;
+    }
+    initAlarms() {
+        if (this.startAlarm) {
+            clearTimeout(this.startAlarm);
+        }
+        this.startAlarm = undefined;
+        if (!this.skipped && this.startTime.millisUntil() > 0) {
+            this.startAlarm = setTimeout(() => {
                 this.alarmHandler(this.clockFace, this);
-            }, this.endTime.totalMillisToEvent());
+            }, this.startTime.millisUntil());
+        }
+        if (this.endAlarm) {
+            clearTimeout(this.endAlarm);
+        }
+        this.endAlarm = undefined;
+        if (!this.skipped && this.endTime.millisUntil() > 0) {
+            this.endAlarm = setTimeout(() => {
+                this.alarmHandler(this.clockFace, this);
+            }, this.endTime.millisUntil());
         }
     }
     displayName() {
         return this.name.substr(0, 14);
     }
     displayTimeRemaining() {
-        return this.endTime.timeRemainingAsString();
+        return this.getTrackedEventDate().timeRemainingAsString();
+    }
+    durationMinutes() {
+        var durationMillis = this.endTime.unixTimestampMillis() - this.startTime.unixTimestampMillis();
+        return durationMillis / 1e3 / 60;
     }
 }
 
@@ -161,7 +197,7 @@ class Events {
     initAlarms() {
         for (var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
-            e.initAlarm();
+            e.initAlarms();
         }
     }
     selectEvent(event) {
@@ -227,10 +263,8 @@ class CalendarUpdater {
     constructor(clockFace, events) {
         this.clockFace = clockFace;
         this.events = events;
-        console.log("1", this.events);
     }
     forceCalendarUpdate() {
-        console.log("2", this.events);
         var cal = require("Storage").readJSON("android.calendar.json", true) || [];
         if (NRF.getSecurityStatus().connected) {
             E.showPrompt("Do you want to also clear the internal database first?", {
@@ -240,25 +274,25 @@ class CalendarUpdater {
                     Cancel: 3
                 }
             }).then(v => {
-                console.log("3", this.events);
                 switch (v) {
                   case 1:
                     require("Storage").writeJSON("android.calendar.json", []);
                     cal = [];
 
                   case 2:
-                    console.log("4", this.events);
                     this.gbSend(JSON.stringify({
                         t: "force_calendar_sync",
                         ids: cal.map(e => e.id)
                     }));
                     E.showAlert("Request sent to the phone").then(() => {
                         this.readCalendarDataAndUpdate();
+                        this.clockFace.redrawAll(this.events);
                     });
                     break;
 
                   case 3:
                   default:
+                    this.readCalendarDataAndUpdate();
                     this.clockFace.redrawAll(this.events);
                     return;
                 }
@@ -274,12 +308,10 @@ class CalendarUpdater {
         Bluetooth.println(JSON.stringify(message));
     }
     readCalendarDataAndUpdate() {
-        console.log("5", this.events);
         var calendarJSON = require("Storage").readJSON("android.calendar.json", true);
         if (!calendarJSON) {
             E.showAlert("No calendar data found.").then(() => {
                 E.showAlert().then(() => {
-                    console.log("6", this.events);
                     this.clockFace.redrawAll(this.events);
                 });
             });
@@ -288,7 +320,6 @@ class CalendarUpdater {
             var updateCount = this.events.updateFromCalendar(calendarJSON);
             E.showAlert("Got calendar data. Updated " + updateCount + ".").then(() => {
                 E.showAlert().then(() => {
-                    console.log("7", this.events);
                     this.clockFace.redrawAll(this.events);
                 });
             });
@@ -314,29 +345,24 @@ class ClockFace {
         var X = 176 * .5;
         var Y = 176 * .75;
         g.reset();
-        new Meter(e).draw();
         g.setFontAlign(0, 1);
         g.setFont("Vector", 20);
         g.drawString(e.displayName(), X, Y - 60, true);
         g.setFont("Vector", 40);
         g.drawString(e.displayTimeRemaining(), X, Y, true);
-        var leftTime = "";
-        var midTime = "";
-        if (e.startTime.formattedTime() == e.endTime.formattedTime()) {
-            midTime = now.formattedTime();
-        } else if (e.startTime < now) {
-            leftTime = e.startTime.formattedTime();
-            midTime = now.formattedTime();
-        } else {
-            leftTime = e.startTime.formattedTime();
+        var leftTime = now.formattedTime();
+        var rightTime = e.getTrackedEventDate().formattedTime();
+        var midTime = e.startTime.formattedTime() + "/";
+        if (midTime == rightTime || e.getTrackedEventBoundary() == TrackedEventBoundary.START) {
+            midTime = "";
         }
-        var rightTime = e.endTime.formattedTime();
-        require("Font5x7Numeric7Seg").add(Graphics);
-        g.setFont("5x7Numeric7Seg", 2);
+        require("FontDennis8").add(Graphics);
+        g.setFont("Dennis8", 2);
         g.setFontAlign(-1, 1);
         g.drawString(leftTime, 5, g.getHeight() - 2, true);
         g.setFontAlign(1, 1);
-        g.drawString(rightTime, g.getWidth() - 5, g.getHeight() - 2, true);
+        g.drawString(midTime + rightTime, g.getWidth() - 5, g.getHeight() - 2, true);
+        new Meter(e).draw();
         if (e.skipped) {
             g.drawLine(0, 0, g.getWidth(), g.getHeight());
             g.drawLine(1, 0, g.getWidth() + 1, g.getHeight());
@@ -356,22 +382,27 @@ class Meter {
         this.eventEnd = event.endTime.date;
         this.segmentCountInt = this.segmentCount(event);
         this.maxMinutesInMeter = this.segmentCountInt * this.minutesPerSegment;
-        this.meterStartTime = new Date(event.endTime.date.getTime() + -this.maxMinutesInMeter * 6e4);
-        this.meterEndTime = event.endTime.date;
+        this.meterStartTime = new Date(event.getTrackedEventDate().date.getTime() + -this.maxMinutesInMeter * 6e4);
+        this.meterEndTime = event.getTrackedEventDate().date;
         this.padding = 5;
         this.height = 22;
-        this.meterTopOffsetPos = g.getHeight() * .77;
+        this.meterTopOffsetPos = g.getHeight() * .73;
         this.maxMeterWidth = g.getWidth() - this.padding * 2;
     }
     segmentCount(event) {
-        var segmentCount = Math.ceil(event.endTime.minutesUntil() / this.minutesPerSegment);
+        var eventDuration = event.durationMinutes();
+        var eventSegmentCount = Math.ceil(eventDuration / this.minutesPerSegment);
+        if (eventSegmentCount > this.maxSegmentCount) {
+            eventSegmentCount = this.maxSegmentCount;
+        }
+        var segmentCount = Math.ceil(event.getTrackedEventDate().minutesUntil() / this.minutesPerSegment);
         if (segmentCount <= 1) {
             segmentCount = 1;
         }
         if (segmentCount > this.maxSegmentCount) {
             segmentCount = this.maxSegmentCount;
         }
-        return segmentCount;
+        return Math.max(eventSegmentCount, segmentCount);
     }
     draw() {
         var originalColor = g.getColor();
@@ -381,6 +412,12 @@ class Meter {
         this.drawMeterFill(this.eventStart, this.eventEnd);
         g.setColor("#FF0000");
         this.drawMeterFill(this.meterStartTime, new Date());
+        if (this.meterStartTime.getTime() < this.eventStart.getTime() && this.eventStart.getTime() < this.meterEndTime.getTime()) {
+            g.setColor("#00FF00");
+            let eventStartXPos = this.dateToXPos(this.eventStart);
+            g.fillPoly([ eventStartXPos, this.meterTopOffsetPos, eventStartXPos, this.meterTopOffsetPos + this.height, eventStartXPos + this.height / 2, this.meterTopOffsetPos + this.height / 2 ]);
+            g.drawLine(eventStartXPos - 1, this.meterTopOffsetPos, eventStartXPos - 1, this.meterTopOffsetPos + this.height);
+        }
         g.setColor("#000000");
         g.drawRect({
             x: this.padding,
@@ -405,6 +442,9 @@ class Meter {
     drawMeterFill(startDate, endDate) {
         var startXPos = this.dateToXPos(startDate);
         var endXPos = this.dateToXPos(endDate);
+        if (startXPos == endXPos) {
+            return;
+        }
         g.fillRect(startXPos, this.meterTopOffsetPos, endXPos, this.meterTopOffsetPos + this.height);
     }
     dateToXPos(date) {
@@ -446,6 +486,12 @@ function setupBangleEvents(clockFace, minuteInterval, eventsObj) {
         }
         if (directionUD == 1 && directionLR == 0) {
             new CalendarUpdater(clockFace, eventsObj).forceCalendarUpdate();
+        }
+    });
+    Bangle.on("touch", function(button, xy) {
+        if (xy.y > 50) {
+            eventsObj.getSelectedEvent().toggleTrackedEventBoundary();
+            clockFace.redrawAll(eventsObj);
         }
     });
     Bangle.on("lcdPower", on => {

@@ -31,7 +31,7 @@ class MyDate {
         return this.date.getTime();
     }
 
-    totalMillisToEvent(): number {
+    millisUntil(): number {
         var now = new Date();
         return this.date.getTime()-now.getTime();
     }

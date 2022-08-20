@@ -18,6 +18,7 @@ class g {
     static setColor(hexColor: string) {}
     static drawRect(rect: any) {}
     static fillRect(x1: number, y1: number, x2: number, y2: number) {}
+    static fillPoly(points: number[]) {}
 }
 
 class Bangle {

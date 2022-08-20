@@ -1,4 +1,9 @@
 
+enum TrackedEventBoundary {
+    START,
+    END,
+}
+
 class CalendarEvent {
     alarmHandler: (clockFace: ClockFace, event: CalendarEvent) => void;
     clockFace: ClockFace;
@@ -6,8 +11,10 @@ class CalendarEvent {
     startTime: MyDate;
     endTime: MyDate;
     skipped: boolean;
-    alarm: NodeJS.Timeout | undefined;
+    startAlarm: NodeJS.Timeout | undefined;
+    endAlarm: NodeJS.Timeout | undefined;
     id: number | undefined;
+    trackedEventBoundary: TrackedEventBoundary;
 
     constructor(clockFace: ClockFace, alarmHandler: (clockFace: ClockFace, event: CalendarEvent) => void, name: string, startTime: MyDate, endTime: MyDate) {
         this.alarmHandler = alarmHandler;
@@ -16,14 +23,18 @@ class CalendarEvent {
         this.startTime = startTime;
         this.endTime = endTime;
         this.skipped = false;
-        this.alarm = undefined;
+        this.startAlarm = undefined;
+        this.endAlarm = undefined;
         this.id = undefined;
+        this.trackedEventBoundary = TrackedEventBoundary.END;
     }
 
     update(event: CalendarEvent) {
         event.id = this.id;
-        event.alarm = this.alarm;
+        event.startAlarm = this.startAlarm;
+        event.endAlarm = this.endAlarm;
         event.skipped = this.skipped;
+        event.trackedEventBoundary = this.trackedEventBoundary;
         var isModified = JSON.stringify(event) != JSON.stringify(this);
 
         this.name = event.name;
@@ -37,28 +48,56 @@ class CalendarEvent {
         this.id = id;
     }
 
-    toggleSkip() {
+    toggleSkip(): boolean {
         this.skipped = !this.skipped;
-        this.initAlarm();
+        this.initAlarms();
         return this.skipped
     }
 
-    initAlarm() {
-        if(this.alarm) {
-            clearTimeout(this.alarm);
+    toggleTrackedEventBoundary() {
+        this.trackedEventBoundary = (this.trackedEventBoundary == TrackedEventBoundary.END) ? TrackedEventBoundary.START : TrackedEventBoundary.END;
+    }
+
+    getTrackedEventBoundary(): TrackedEventBoundary {
+        return this.trackedEventBoundary;
+    }
+
+    getTrackedEventDate(): MyDate {
+        if(this.trackedEventBoundary == TrackedEventBoundary.START) {
+            return this.startTime;
         }
-        this.alarm = undefined;
-        if(!this.skipped && this.endTime.totalMillisToEvent() > 0) {
-            this.alarm = setTimeout(() => {this.alarmHandler(this.clockFace, this)}, this.endTime.totalMillisToEvent());
+        return this.endTime;
+    }
+
+    initAlarms() {
+        if(this.startAlarm) {
+            clearTimeout(this.startAlarm);
+        }
+        this.startAlarm = undefined;
+        if(!this.skipped && this.startTime.millisUntil() > 0) {
+            this.startAlarm = setTimeout(() => {this.alarmHandler(this.clockFace, this)}, this.startTime.millisUntil());
+        }
+
+        if(this.endAlarm) {
+            clearTimeout(this.endAlarm);
+        }
+        this.endAlarm = undefined;
+        if(!this.skipped && this.endTime.millisUntil() > 0) {
+            this.endAlarm = setTimeout(() => {this.alarmHandler(this.clockFace, this)}, this.endTime.millisUntil());
         }
     }
 
-    displayName() {
+    displayName(): string {
         return this.name.substr(0, 14);
     }
 
-    displayTimeRemaining() {
-        return this.endTime.timeRemainingAsString()
+    displayTimeRemaining(): string {
+        return this.getTrackedEventDate().timeRemainingAsString();
+    }
+
+    durationMinutes(): number {
+        var durationMillis = this.endTime.unixTimestampMillis() - this.startTime.unixTimestampMillis()
+        return durationMillis / 1000 / 60;
     }
 }
 
@@ -126,7 +165,7 @@ class Events {
     public initAlarms() {
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
-            e.initAlarm();
+            e.initAlarms();
         }
     }
 

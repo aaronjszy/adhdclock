@@ -18,8 +18,6 @@ class ClockFace {
 
         g.reset();
 
-        (new Meter(e)).draw();
-
         // Draw current time
         g.setFontAlign(0,1);
 
@@ -28,26 +26,23 @@ class ClockFace {
         g.setFont("Vector", 40);
         g.drawString(e.displayTimeRemaining(), X, Y, true);
 
-        
-        var leftTime = "";
-        var midTime = "";
-        if(e.startTime.formattedTime() == e.endTime.formattedTime()) {
-            midTime = now.formattedTime();
-        } else if(e.startTime < now) {
-            leftTime = e.startTime.formattedTime();
-            midTime = now.formattedTime();
-        } else {
-            leftTime = e.startTime.formattedTime();
+        var leftTime = now.formattedTime();
+        var rightTime = e.getTrackedEventDate().formattedTime();
+
+        var midTime = e.startTime.formattedTime() + "/";
+        if(midTime == rightTime || e.getTrackedEventBoundary() == TrackedEventBoundary.START) {
+            midTime = "";
         }
-        var rightTime = e.endTime.formattedTime();
 
         // Draw event info
-        require("Font5x7Numeric7Seg").add(Graphics);
-        g.setFont("5x7Numeric7Seg", 2);
+        require("FontDennis8").add(Graphics);
+        g.setFont("Dennis8", 2);
         g.setFontAlign(-1, 1);
         g.drawString(leftTime, 5, g.getHeight()-2, true);
         g.setFontAlign(1, 1);
-        g.drawString(rightTime, g.getWidth()-5, g.getHeight()-2, true);
+        g.drawString(midTime + rightTime, g.getWidth()-5, g.getHeight()-2, true);
+
+        (new Meter(e)).draw();
 
         // Cross out skipped items
         if(e.skipped) {
@@ -87,26 +82,32 @@ class Meter {
         this.segmentCountInt = this.segmentCount(event);
         this.maxMinutesInMeter = this.segmentCountInt * this.minutesPerSegment;
 
-        this.meterStartTime = new Date(event.endTime.date.getTime() + -this.maxMinutesInMeter * 60000);
-        this.meterEndTime = event.endTime.date;
+        this.meterStartTime = new Date(event.getTrackedEventDate().date.getTime() + -this.maxMinutesInMeter * 60000);
+        this.meterEndTime = event.getTrackedEventDate().date;
 
         // Draw params
         this.padding = 5;
         this.height = 22;
-        this.meterTopOffsetPos = g.getHeight()*0.77;
+        this.meterTopOffsetPos = g.getHeight()*0.73;
         this.maxMeterWidth = g.getWidth() - (this.padding*2);
     }
 
     segmentCount(event: CalendarEvent) {
-        // Determine how many segments to use for the meter
-        var segmentCount = Math.ceil(event.endTime.minutesUntil() / this.minutesPerSegment);
+        var eventDuration = event.durationMinutes();
+        var eventSegmentCount = Math.ceil(eventDuration / this.minutesPerSegment);
+        if(eventSegmentCount > this.maxSegmentCount) {
+            eventSegmentCount = this.maxSegmentCount;
+        }
+
+        var segmentCount = Math.ceil(event.getTrackedEventDate().minutesUntil() / this.minutesPerSegment);
         if(segmentCount <= 1) {
             segmentCount = 1;
         }
         if(segmentCount > this.maxSegmentCount) {
             segmentCount = this.maxSegmentCount;
         }
-        return segmentCount
+
+        return Math.max(eventSegmentCount, segmentCount);
     }
 
     draw() {
@@ -124,6 +125,21 @@ class Meter {
         g.setColor('#FF0000');
         this.drawMeterFill(this.meterStartTime, new Date());
     
+        // Draw event start indicator
+        if(this.meterStartTime.getTime() < this.eventStart.getTime() && this.eventStart.getTime() < this.meterEndTime.getTime()) {
+            g.setColor('#00FF00');
+            let eventStartXPos = this.dateToXPos(this.eventStart);
+
+            g.fillPoly([
+                eventStartXPos, this.meterTopOffsetPos,
+                eventStartXPos, this.meterTopOffsetPos+this.height,
+                eventStartXPos+(this.height/2), this.meterTopOffsetPos+(this.height/2),
+            ]);
+
+            // This extra line covers up some pixels on the left that arent covered up for whatever reason
+            g.drawLine(eventStartXPos-1, this.meterTopOffsetPos, eventStartXPos-1, this.meterTopOffsetPos+this.height);
+        }
+
         // Draw the outside gauge border
         g.setColor('#000000');
         g.drawRect({x: this.padding, y: this.meterTopOffsetPos, h: this.height, w: this.maxMeterWidth});
@@ -143,6 +159,9 @@ class Meter {
     drawMeterFill(startDate: Date, endDate: Date) {
         var startXPos = this.dateToXPos(startDate);    
         var endXPos = this.dateToXPos(endDate);
+        if(startXPos == endXPos) {
+            return;
+        }
         g.fillRect(startXPos, this.meterTopOffsetPos, endXPos, this.meterTopOffsetPos+this.height);
     }
 
@@ -157,6 +176,5 @@ class Meter {
         }
         var maxMeterWidth = g.getWidth() - (this.padding*2);
         return (maxMeterWidth * percentage) + this.padding;
-
     }
 }
