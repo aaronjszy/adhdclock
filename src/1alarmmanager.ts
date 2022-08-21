@@ -27,7 +27,7 @@ class Alarm {
     }
 
     public toString(): string {
-        return `${this.id} '${this.date.toLocaleString()}'`;
+        return `${this.id} '${this.date}'`;
     }
 }
 
@@ -39,13 +39,13 @@ class AlarmManager {
     }
 
     public addAlarm(id: string, date: Date, callback: Function): Alarm {
-        var alarm = new Alarm(id, date, callback).setup();
-        let a = this.alarms[id];
-        if(a) {
-            a.cancel();
+        if(this.alarms[id]) {
+            this.alarms[id].cancel();
         }
-        this.alarms[id] = alarm;
-        return alarm;
+
+
+        this.alarms[id] = new Alarm(id, date, callback).setup();
+        return this.alarms[id];
     }
 
     public toString(): string {

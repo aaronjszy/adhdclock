@@ -18,7 +18,6 @@ require("Storage").write("adhdclock.info",{
 ```
 
 ## TODO
-  - Treat event start AND end as separate "events"
   - Persist event data so we dont lose state when switching apps
   - When the timer is within x minutes, show seconds
   - Replace MyDate with Date and a custom date class with static methods

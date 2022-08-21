@@ -129,7 +129,7 @@ class CalendarEvents {
         this.refocusTimeout = undefined;
     }
 
-    public eventAlarmHandler(clockFace: ClockFace, event: CalendarEvent) {
+    public eventAlarmHandler(event: CalendarEvent) {
         this.selectEvent(event);
         this.clockFace.redrawAll(this);
 
@@ -163,7 +163,7 @@ class CalendarEvents {
             }
 
             var newEvent = new CalendarEvent(this.clockFace, calendarEvent.title, calendarEvent.description, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
-            newEvent.setAlarmHandler(() => {this.eventAlarmHandler(this.clockFace, newEvent)});
+            newEvent.setAlarmHandler(() => {this.eventAlarmHandler(newEvent)});
             newEvent.setBangleCalendarEventId(calendarEvent.id);
             if(this.addEvent(newEvent)) {
                 updated++;
@@ -177,7 +177,7 @@ class CalendarEvents {
     }
 
     public addEvent(event: CalendarEvent): boolean {
-        event.setAlarmHandler(()=>{this.eventAlarmHandler(this.clockFace, event)});
+        event.setAlarmHandler(()=>{this.eventAlarmHandler(event)});
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             if(e.id == event.id) {

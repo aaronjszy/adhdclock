@@ -1,5 +1,8 @@
 class Graphics {}
 
+class Terminal {
+    static println(msg: string) {}
+}
 
 class Bluetooth {
     static println(msg: string) {}
