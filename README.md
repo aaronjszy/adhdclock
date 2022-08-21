@@ -21,8 +21,10 @@ require("Storage").write("adhdclock.info",{
   - Treat event start AND end as separate "events"
   - Persist event data so we dont lose state when switching apps
   - When the timer is within x minutes, show seconds
-
-
+  - Replace MyDate with Date and a custom date class with static methods
+  - Use layout instead of what im doing now: https://www.espruino.com/Bangle.js+Layout
+  - Add todays date somewhere
+  - If all events are in the past, what should we do? Show the time? Create another event?
 
 ## Reference
  - https://github.com/espruino/BangleApps/blob/17fde110a269dee8731dfe0733e34e8a5e806247/apps/agenda/settings.js

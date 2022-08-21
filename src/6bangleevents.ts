@@ -26,13 +26,34 @@ function setupBangleEvents(clockFace: ClockFace, minuteInterval: NodeJS.Timer, e
         }
     });
 
+    var ignoreTouch = false;
     Bangle.on('touch', function(button, xy) {
-        if(xy.y > 50) {
+        // This ignore touch makes it so that touch events are not registered for clicking buttons
+        if(ignoreTouch) {
+            return;
+        }
+
+        // Bottom bar
+        if(xy.y > g.getHeight() - 50) {
             // Toggle countdown between event start and event end
             eventsObj.getSelectedEvent().toggleTrackedEventBoundary();
 
             // Redraw to show the updated state
             clockFace.redrawAll(eventsObj);
+
+        // Top area except for gadgets
+        } else if(xy.y > 50) {
+            ignoreTouch = true;
+            // Display event details
+            // Deploy the prompt so we dont immediately get a touch event that clicks the ok button
+            setTimeout(()=>{
+                E.showPrompt(eventsObj.getSelectedEvent().displayDescription(), {
+                    buttons: {Ok: 1}
+                }).then(()=>{
+                    ignoreTouch = false;
+                    clockFace.redrawAll(eventsObj);
+                });
+            }, 200);
         }
     });
 

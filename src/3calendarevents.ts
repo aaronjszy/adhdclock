@@ -9,17 +9,19 @@ class CalendarEvent {
     id: string;
     clockFace: ClockFace;
     name: string;
+    description: string;
     startTime: MyDate;
     endTime: MyDate;
     skipped: boolean;
     bangleCalendarEventId: number | undefined;
     trackedEventBoundary: TrackedEventBoundary;
 
-    constructor(clockFace: ClockFace, name: string, startTime: MyDate, endTime: MyDate) {
+    constructor(clockFace: ClockFace, name: string, description: string, startTime: MyDate, endTime: MyDate) {
         this.alarmHandler = () => {};
         this.id = `${name}/${new Date().getTime().toString()}`;
         this.clockFace = clockFace;
         this.name = name;
+        this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
         this.skipped = false;
@@ -40,6 +42,7 @@ class CalendarEvent {
         var isModified = JSON.stringify(event) != JSON.stringify(this);
 
         this.name = event.name;
+        this.description = event.description;
         this.startTime = event.startTime;
         this.endTime = event.endTime;
 
@@ -60,6 +63,9 @@ class CalendarEvent {
     }
 
     getTrackedEventBoundary(): TrackedEventBoundary {
+        // if (this.startTime.date.getTime() == this.endTime.date.getTime()) {
+        //     return TrackedEventBoundary.END;
+        // }
         return this.trackedEventBoundary;
     }
 
@@ -85,6 +91,17 @@ class CalendarEvent {
 
     displayName(): string {
         return this.name.substr(0, 14);
+    }
+
+    displayDescription(): string {
+        if(this.description.length == 0) {
+            return "empty";
+        }
+        if(this.displayDescription.length > 50) {
+            return this.description.substr(0, 50) + "...";
+        }
+
+        return this.description;
     }
 
     displayTimeRemaining(): string {
@@ -134,17 +151,18 @@ class CalendarEvents {
         var maxEventTimeOffset = 1000*60*60*24;
         for(var i = 0; i < calendar.length; i++) {
             var calendarEvent = calendar[i];
+            console.log(calendarEvent);
             var calStartEventTimeMillis = calendarEvent.timestamp*1000;
             var calEndEventTimeMillis = (calendarEvent.timestamp+calendarEvent.durationInSeconds)*1000;
 
             if (calEndEventTimeMillis > (now.getTime()+maxEventTimeOffset) || calEndEventTimeMillis < (now.getTime()-maxEventTimeOffset)) {
                 continue;
             }
-            if(calendarEvent.title == "" || calendarEvent.t != "calendar" || calendarEvent.allDay || calendarEvent.type != 0) {
+            if(calendarEvent.title == "" || calendarEvent.t != "calendar" || calendarEvent.allDay || calendarEvent.durationInSeconds == 86400 || calendarEvent.type != 0) {
                 continue;
             }
 
-            var newEvent = new CalendarEvent(this.clockFace, calendarEvent.title, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
+            var newEvent = new CalendarEvent(this.clockFace, calendarEvent.title, calendarEvent.description, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
             newEvent.setAlarmHandler(() => {this.eventAlarmHandler(this.clockFace, newEvent)});
             newEvent.setBangleCalendarEventId(calendarEvent.id);
             if(this.addEvent(newEvent)) {
@@ -194,7 +212,7 @@ class CalendarEvents {
         return this.getSelectedEvent();
     }
 
-    public selectUpcomingEvent() {
+    private getUpcomingEventIndex(): number {
         var soonestEventSeconds = Number.MAX_VALUE;
         var soonestEventIndex = this.events.length-1;
         for(var i = 0; i < this.events.length; i++) {
@@ -205,8 +223,12 @@ class CalendarEvents {
                 soonestEventIndex = i
             }
         }
-        
-        this.selectedEvent = soonestEventIndex;
+
+        return soonestEventIndex;
+    }
+
+    public selectUpcomingEvent(): CalendarEvent {
+        this.selectedEvent = this.getUpcomingEventIndex();
         return this.getSelectedEvent();
     }
 

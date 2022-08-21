@@ -137,7 +137,7 @@ class Meter {
             ]);
 
             // This extra line covers up some pixels on the left that arent covered by the for whatever reason
-            g.drawLine(eventStartXPos, this.meterTopOffsetPos, eventStartXPos-1, this.meterTopOffsetPos+this.height);
+            g.drawLine(eventStartXPos, this.meterTopOffsetPos, eventStartXPos, this.meterTopOffsetPos+this.height);
         }
 
         // Draw the outside gauge border
