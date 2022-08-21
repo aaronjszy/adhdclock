@@ -1,14 +1,79 @@
 "use strict";
 
+class Alarm {
+    constructor(id, date, callback) {
+        this.id = id;
+        this.date = date;
+        this.callback = callback;
+        this.timeout = undefined;
+    }
+    setup() {
+        this.cancel();
+        this.timeout = setTimeout(() => {
+            this.callback();
+        }, this.date.getTime() - new Date().getTime());
+        return this;
+    }
+    cancel() {
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+        }
+    }
+    toString() {
+        return `${this.id} '${this.date.toLocaleString()}'`;
+    }
+}
+
+class AlarmManager {
+    constructor() {
+        this.alarms = {};
+    }
+    addAlarm(id, date, callback) {
+        var alarm = new Alarm(id, date, callback).setup();
+        let a = this.alarms[id];
+        if (a) {
+            a.cancel();
+        }
+        this.alarms[id] = alarm;
+        return alarm;
+    }
+    toString() {
+        var s = "";
+        for (var id in this.alarms) {
+            s += this.alarms[id].toString() + "\n";
+        }
+        return s;
+    }
+}
+
+"use strict";
+
 function zeroPad(n) {
-    return ("0" + n).substr(-2);
+    return ("0" + n.toString()).substr(-2);
 }
 
 "use strict";
 
 class MyDate {
-    constructor(dateStr) {
-        this.date = dateStr ? new Date(dateStr) : new Date();
+    constructor(dateStr, timeStr) {
+        console.log();
+        if (timeStr) {
+            let timeParts = timeStr.split(":");
+            let hourStr = timeParts[0] == "12" ? "0" : timeParts[0];
+            if (timeStr.endsWith("pm")) {
+                hourStr = zeroPad(parseInt(hourStr) + 12);
+            } else {
+                hourStr = zeroPad(parseInt(hourStr));
+            }
+            let minStr = timeParts[1];
+            if (minStr.length > 2) {
+                minStr = minStr.substr(0, 2);
+            }
+            let tzStr = "-" + zeroPad(new Date().getTimezoneOffset() / 60) + "00";
+            this.date = new Date(`${dateStr}T${hourStr}:${minStr}:00 GMT${tzStr}`);
+        } else {
+            this.date = dateStr ? new Date(dateStr) : new Date();
+        }
     }
     valueOf() {
         return this.date;
@@ -70,36 +135,37 @@ var TrackedEventBoundary;
 })(TrackedEventBoundary || (TrackedEventBoundary = {}));
 
 class CalendarEvent {
-    constructor(clockFace, alarmHandler, name, startTime, endTime) {
-        this.alarmHandler = alarmHandler;
+    constructor(clockFace, name, startTime, endTime) {
+        this.alarmHandler = () => {};
+        this.id = `${name}/${new Date().getTime().toString()}`;
         this.clockFace = clockFace;
         this.name = name;
         this.startTime = startTime;
         this.endTime = endTime;
         this.skipped = false;
-        this.startAlarm = undefined;
-        this.endAlarm = undefined;
-        this.id = undefined;
+        this.bangleCalendarEventId = undefined;
         this.trackedEventBoundary = TrackedEventBoundary.END;
+    }
+    setAlarmHandler(alarmHandler) {
+        this.alarmHandler = alarmHandler;
     }
     update(event) {
         event.id = this.id;
-        event.startAlarm = this.startAlarm;
-        event.endAlarm = this.endAlarm;
+        event.bangleCalendarEventId = this.bangleCalendarEventId;
         event.skipped = this.skipped;
         event.trackedEventBoundary = this.trackedEventBoundary;
+        event.alarmHandler = this.alarmHandler;
         var isModified = JSON.stringify(event) != JSON.stringify(this);
         this.name = event.name;
         this.startTime = event.startTime;
         this.endTime = event.endTime;
         return isModified;
     }
-    setId(id) {
-        this.id = id;
+    setBangleCalendarEventId(bangleCalendarEventId) {
+        this.bangleCalendarEventId = bangleCalendarEventId;
     }
     toggleSkip() {
         this.skipped = !this.skipped;
-        this.initAlarms();
         return this.skipped;
     }
     toggleTrackedEventBoundary() {
@@ -114,25 +180,17 @@ class CalendarEvent {
         }
         return this.endTime;
     }
-    initAlarms() {
-        if (this.startAlarm) {
-            clearTimeout(this.startAlarm);
-        }
-        this.startAlarm = undefined;
-        if (!this.skipped && this.startTime.millisUntil() > 0) {
-            this.startAlarm = setTimeout(() => {
+    initAlarms(alarmManager) {
+        alarmManager.addAlarm(this.id + "/start", this.startTime.date, () => {
+            if (!this.skipped && this.startTime.millisUntil() > 0) {
                 this.alarmHandler(this.clockFace, this);
-            }, this.startTime.millisUntil());
-        }
-        if (this.endAlarm) {
-            clearTimeout(this.endAlarm);
-        }
-        this.endAlarm = undefined;
-        if (!this.skipped && this.endTime.millisUntil() > 0) {
-            this.endAlarm = setTimeout(() => {
+            }
+        });
+        alarmManager.addAlarm(this.id + "/end", this.endTime.date, () => {
+            if (!this.skipped && this.endTime.millisUntil() > 0) {
                 this.alarmHandler(this.clockFace, this);
-            }, this.endTime.millisUntil());
-        }
+            }
+        });
     }
     displayName() {
         return this.name.substr(0, 14);
@@ -146,13 +204,27 @@ class CalendarEvent {
     }
 }
 
-class Events {
-    constructor(clockFace, events, alarmHandler) {
+class CalendarEvents {
+    constructor(clockFace, events, alarmManager) {
         this.clockFace = clockFace;
         this.selectedEvent = 0;
         this.events = events;
+        this.alarmManager = alarmManager;
         this.refocusTimeout = undefined;
-        this.alarmHandler = alarmHandler;
+    }
+    eventAlarmHandler(clockFace, event) {
+        this.selectEvent(event);
+        this.clockFace.redrawAll(this);
+        Bangle.setLCDPower(1);
+        Bangle.buzz(1e3).then(() => {
+            return new Promise(resolve => setTimeout(resolve, 500));
+        }).then(() => {
+            return Bangle.buzz(1e3);
+        }).then(() => {
+            return new Promise(resolve => setTimeout(resolve, 500));
+        }).then(() => {
+            return Bangle.buzz(1e3);
+        });
     }
     updateFromCalendar(calendar) {
         var updated = 0;
@@ -168,8 +240,11 @@ class Events {
             if (calendarEvent.title == "" || calendarEvent.t != "calendar" || calendarEvent.allDay || calendarEvent.type != 0) {
                 continue;
             }
-            var newEvent = new CalendarEvent(this.clockFace, this.alarmHandler, calendarEvent.title, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
-            newEvent.setId(calendarEvent.id);
+            var newEvent = new CalendarEvent(this.clockFace, calendarEvent.title, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
+            newEvent.setAlarmHandler(() => {
+                this.eventAlarmHandler(this.clockFace, newEvent);
+            });
+            newEvent.setBangleCalendarEventId(calendarEvent.id);
             if (this.addEvent(newEvent)) {
                 updated++;
             }
@@ -180,6 +255,9 @@ class Events {
         return updated;
     }
     addEvent(event) {
+        event.setAlarmHandler(() => {
+            this.eventAlarmHandler(this.clockFace, event);
+        });
         for (var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             if (e.id == event.id) {
@@ -197,7 +275,7 @@ class Events {
     initAlarms() {
         for (var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
-            e.initAlarms();
+            e.initAlarms(alarmManager);
         }
     }
     selectEvent(event) {
@@ -416,7 +494,7 @@ class Meter {
             g.setColor("#00FF00");
             let eventStartXPos = this.dateToXPos(this.eventStart);
             g.fillPoly([ eventStartXPos, this.meterTopOffsetPos, eventStartXPos, this.meterTopOffsetPos + this.height, eventStartXPos + this.height / 2, this.meterTopOffsetPos + this.height / 2 ]);
-            g.drawLine(eventStartXPos - 1, this.meterTopOffsetPos, eventStartXPos - 1, this.meterTopOffsetPos + this.height);
+            g.drawLine(eventStartXPos, this.meterTopOffsetPos, eventStartXPos - 1, this.meterTopOffsetPos + this.height);
         }
         g.setColor("#000000");
         g.drawRect({
@@ -513,20 +591,11 @@ require("Font7x11Numeric7Seg").add(Graphics);
 
 var clockFace = new ClockFace();
 
-function eventAlarmHandler(clockFace, event) {
-    Bangle.setLCDPower(1);
-    Bangle.buzz(1e3).then(() => {
-        return new Promise(resolve => setTimeout(resolve, 500));
-    }).then(() => {
-        return Bangle.buzz(1e3);
-    }).then(() => {
-        return new Promise(resolve => setTimeout(resolve, 500));
-    }).then(() => {
-        return Bangle.buzz(1e3);
-    });
-}
+var alarmManager = new AlarmManager();
 
-var eventsObj = new Events(clockFace, [], eventAlarmHandler);
+var eventsObj = new CalendarEvents(clockFace, [], alarmManager);
+
+eventsObj.addEvent(new CalendarEvent(clockFace, "test1", new MyDate("2022-08-20", "5:32pm"), new MyDate("2022-08-20", "5:34pm")));
 
 eventsObj.initAlarms();
 

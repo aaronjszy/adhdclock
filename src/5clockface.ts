@@ -1,11 +1,11 @@
 class ClockFace {
-    redrawAll(eventsObj: Events) {
+    redrawAll(eventsObj: CalendarEvents) {
         g.clear();
         Bangle.drawWidgets();
         this.draw(eventsObj);
     }
 
-    draw(eventsObj: Events) {
+    draw(eventsObj: CalendarEvents) {
         var now = new MyDate();
         var e = eventsObj.getSelectedEvent();
         if(!e) {
@@ -136,8 +136,8 @@ class Meter {
                 eventStartXPos+(this.height/2), this.meterTopOffsetPos+(this.height/2),
             ]);
 
-            // This extra line covers up some pixels on the left that arent covered up for whatever reason
-            g.drawLine(eventStartXPos-1, this.meterTopOffsetPos, eventStartXPos-1, this.meterTopOffsetPos+this.height);
+            // This extra line covers up some pixels on the left that arent covered by the for whatever reason
+            g.drawLine(eventStartXPos, this.meterTopOffsetPos, eventStartXPos-1, this.meterTopOffsetPos+this.height);
         }
 
         // Draw the outside gauge border

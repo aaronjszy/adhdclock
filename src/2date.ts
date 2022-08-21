@@ -2,8 +2,25 @@
 class MyDate {
     date: Date;
 
-    constructor(dateStr?: string|number) {
-        this.date = (dateStr) ? new Date(dateStr) : new Date();
+    constructor(dateStr?: string|number, timeStr?: string) {
+        console.log();
+        if(timeStr) {
+            let timeParts = timeStr.split(":");
+            let hourStr = (timeParts[0] == "12") ? "0" : timeParts[0];
+            if(timeStr.endsWith("pm")) {
+                hourStr = zeroPad((parseInt(hourStr) + 12));
+            } else {
+                hourStr = zeroPad(parseInt(hourStr));
+            }
+            let minStr = timeParts[1];
+            if(minStr.length > 2) {
+                minStr = minStr.substr(0, 2);
+            }
+            let tzStr = "-" + zeroPad((new Date()).getTimezoneOffset()/60) + "00";
+            this.date = new Date(`${dateStr}T${hourStr}:${minStr}:00 GMT${tzStr}`);
+        } else {
+            this.date = (dateStr) ? new Date(dateStr) : new Date();
+        }
     }
 
     valueOf(): Date {

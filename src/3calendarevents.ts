@@ -5,36 +5,38 @@ enum TrackedEventBoundary {
 }
 
 class CalendarEvent {
-    alarmHandler: (clockFace: ClockFace, event: CalendarEvent) => void;
+    alarmHandler: ((clockFace: ClockFace, event: CalendarEvent) => void);
+    id: string;
     clockFace: ClockFace;
     name: string;
     startTime: MyDate;
     endTime: MyDate;
     skipped: boolean;
-    startAlarm: NodeJS.Timeout | undefined;
-    endAlarm: NodeJS.Timeout | undefined;
-    id: number | undefined;
+    bangleCalendarEventId: number | undefined;
     trackedEventBoundary: TrackedEventBoundary;
 
-    constructor(clockFace: ClockFace, alarmHandler: (clockFace: ClockFace, event: CalendarEvent) => void, name: string, startTime: MyDate, endTime: MyDate) {
-        this.alarmHandler = alarmHandler;
+    constructor(clockFace: ClockFace, name: string, startTime: MyDate, endTime: MyDate) {
+        this.alarmHandler = () => {};
+        this.id = `${name}/${new Date().getTime().toString()}`;
         this.clockFace = clockFace;
         this.name = name;
         this.startTime = startTime;
         this.endTime = endTime;
         this.skipped = false;
-        this.startAlarm = undefined;
-        this.endAlarm = undefined;
-        this.id = undefined;
+        this.bangleCalendarEventId = undefined;
         this.trackedEventBoundary = TrackedEventBoundary.END;
+    }
+
+    public setAlarmHandler(alarmHandler: (clockFace: ClockFace, event: CalendarEvent) => void) {
+        this.alarmHandler = alarmHandler;
     }
 
     update(event: CalendarEvent) {
         event.id = this.id;
-        event.startAlarm = this.startAlarm;
-        event.endAlarm = this.endAlarm;
+        event.bangleCalendarEventId = this.bangleCalendarEventId;
         event.skipped = this.skipped;
         event.trackedEventBoundary = this.trackedEventBoundary;
+        event.alarmHandler = this.alarmHandler;
         var isModified = JSON.stringify(event) != JSON.stringify(this);
 
         this.name = event.name;
@@ -44,13 +46,12 @@ class CalendarEvent {
         return isModified;
     }
 
-    setId(id: number) {
-        this.id = id;
+    setBangleCalendarEventId(bangleCalendarEventId: number) {
+        this.bangleCalendarEventId = bangleCalendarEventId;
     }
 
     toggleSkip(): boolean {
         this.skipped = !this.skipped;
-        this.initAlarms();
         return this.skipped
     }
 
@@ -69,22 +70,17 @@ class CalendarEvent {
         return this.endTime;
     }
 
-    initAlarms() {
-        if(this.startAlarm) {
-            clearTimeout(this.startAlarm);
-        }
-        this.startAlarm = undefined;
-        if(!this.skipped && this.startTime.millisUntil() > 0) {
-            this.startAlarm = setTimeout(() => {this.alarmHandler(this.clockFace, this)}, this.startTime.millisUntil());
-        }
-
-        if(this.endAlarm) {
-            clearTimeout(this.endAlarm);
-        }
-        this.endAlarm = undefined;
-        if(!this.skipped && this.endTime.millisUntil() > 0) {
-            this.endAlarm = setTimeout(() => {this.alarmHandler(this.clockFace, this)}, this.endTime.millisUntil());
-        }
+    initAlarms(alarmManager: AlarmManager) {
+        alarmManager.addAlarm(this.id+"/start", this.startTime.date, () => {
+            if(!this.skipped && this.startTime.millisUntil() > 0) {
+                this.alarmHandler(this.clockFace, this);
+            }
+        });
+        alarmManager.addAlarm(this.id+"/end", this.endTime.date, () => {
+            if(!this.skipped && this.endTime.millisUntil() > 0) {
+                this.alarmHandler(this.clockFace, this);
+            }
+        });
     }
 
     displayName(): string {
@@ -101,19 +97,35 @@ class CalendarEvent {
     }
 }
 
-class Events {
+class CalendarEvents {
     clockFace: ClockFace;
     selectedEvent: number;
     events: CalendarEvent[];
     refocusTimeout: NodeJS.Timeout | undefined;
-    alarmHandler: (clockFace: ClockFace, event: CalendarEvent) => void;
+    alarmManager: AlarmManager;
 
-    constructor(clockFace: ClockFace, events: CalendarEvent[], alarmHandler: (clockFace: ClockFace, event: CalendarEvent) => void) {
+    constructor(clockFace: ClockFace, events: CalendarEvent[], alarmManager: AlarmManager) {
         this.clockFace = clockFace;
         this.selectedEvent = 0;
         this.events = events;
+        this.alarmManager = alarmManager;
         this.refocusTimeout = undefined;
-        this.alarmHandler = alarmHandler;
+    }
+
+    public eventAlarmHandler(clockFace: ClockFace, event: CalendarEvent) {
+        this.selectEvent(event);
+        this.clockFace.redrawAll(this);
+
+        Bangle.setLCDPower(1);
+        Bangle.buzz(1000).then(() => {
+            return new Promise(resolve => setTimeout(resolve, 500));
+        }).then(()=>{
+            return Bangle.buzz(1000);
+        }).then(() => {
+            return new Promise(resolve => setTimeout(resolve, 500));
+        }).then(()=>{
+            return Bangle.buzz(1000);
+        });
     }
 
     public updateFromCalendar(calendar: any) {
@@ -132,8 +144,9 @@ class Events {
                 continue;
             }
 
-            var newEvent = new CalendarEvent(this.clockFace, this.alarmHandler, calendarEvent.title, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
-            newEvent.setId(calendarEvent.id);
+            var newEvent = new CalendarEvent(this.clockFace, calendarEvent.title, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
+            newEvent.setAlarmHandler(() => {this.eventAlarmHandler(this.clockFace, newEvent)});
+            newEvent.setBangleCalendarEventId(calendarEvent.id);
             if(this.addEvent(newEvent)) {
                 updated++;
             }
@@ -146,6 +159,7 @@ class Events {
     }
 
     public addEvent(event: CalendarEvent): boolean {
+        event.setAlarmHandler(()=>{this.eventAlarmHandler(this.clockFace, event)});
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             if(e.id == event.id) {
@@ -165,7 +179,7 @@ class Events {
     public initAlarms() {
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
-            e.initAlarms();
+            e.initAlarms(alarmManager);
         }
     }
 

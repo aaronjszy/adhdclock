@@ -1,9 +1,9 @@
 
 class CalendarUpdater {
     clockFace: ClockFace;
-    events: Events;
+    events: CalendarEvents;
 
-    constructor(clockFace: ClockFace, events: Events) {
+    constructor(clockFace: ClockFace, events: CalendarEvents) {
         this.clockFace = clockFace;
         this.events = events;
     }

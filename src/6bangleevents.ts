@@ -1,5 +1,5 @@
 
-function setupBangleEvents(clockFace: ClockFace, minuteInterval: NodeJS.Timer, eventsObj: Events) {
+function setupBangleEvents(clockFace: ClockFace, minuteInterval: NodeJS.Timer, eventsObj: CalendarEvents) {
 
     Bangle.on('swipe', function(directionLR, directionUD) {
         if(directionLR == -1 && directionUD == 0) {

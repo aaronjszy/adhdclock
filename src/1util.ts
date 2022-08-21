@@ -1,3 +1,3 @@
 function zeroPad(n: number) : string {
-    return ("0" + n).substr(-2);
+    return ("0" + n.toString()).substr(-2);
 }
