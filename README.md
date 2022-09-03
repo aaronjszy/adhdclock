@@ -8,6 +8,8 @@ This project is written in typescript. To build it, run
 `./build.sh` to generate adhdclock.app.js.
 
 ```javascript
+require("Storage").write("android.calendar.json",[]);
+
 require("Storage").write("adhdclock.info",{
   "id":"adhdclock",
   "name":"ADHD Clock",

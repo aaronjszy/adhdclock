@@ -20,7 +20,7 @@ class Alarm {
         }
     }
     toString() {
-        return `${this.id} '${this.date.toLocaleString()}'`;
+        return `${this.id} '${this.date}'`;
     }
 }
 
@@ -29,13 +29,11 @@ class AlarmManager {
         this.alarms = {};
     }
     addAlarm(id, date, callback) {
-        var alarm = new Alarm(id, date, callback).setup();
-        let a = this.alarms[id];
-        if (a) {
-            a.cancel();
+        if (this.alarms[id]) {
+            this.alarms[id].cancel();
         }
-        this.alarms[id] = alarm;
-        return alarm;
+        this.alarms[id] = new Alarm(id, date, callback).setup();
+        return this.alarms[id];
     }
     toString() {
         var s = "";
@@ -56,7 +54,6 @@ function zeroPad(n) {
 
 class MyDate {
     constructor(dateStr, timeStr) {
-        console.log();
         if (timeStr) {
             let timeParts = timeStr.split(":");
             let hourStr = timeParts[0] == "12" ? "0" : timeParts[0];
@@ -107,7 +104,7 @@ class MyDate {
         var now = new Date();
         return (this.date.getTime() - now.getTime()) / 1e3 / 60 + 1;
     }
-    timeRemainingAsString() {
+    timeRemainingAsString(showSeconds) {
         var secondsUntil = this.secondsUntil();
         var sign = secondsUntil < 0 ? "-" : "";
         var secondsUntilAbs = Math.abs(secondsUntil);
@@ -115,6 +112,10 @@ class MyDate {
         var hoursToEventAbs = Math.floor(totalMinutesToEventAbs / 60);
         var minutesToEventAbs = totalMinutesToEventAbs % 60;
         if (hoursToEventAbs == 0) {
+            if (showSeconds) {
+                var secondsDisplay = zeroPad(Math.floor(secondsUntilAbs % 60));
+                return `${sign}${minutesToEventAbs}:${secondsDisplay}`;
+            }
             return `${sign}${minutesToEventAbs}`;
         } else {
             return `${sign}${hoursToEventAbs}:${zeroPad(minutesToEventAbs)}`;
@@ -151,7 +152,11 @@ class CalendarEvent {
         this.alarmHandler = alarmHandler;
     }
     update(event) {
+        if (event.bangleCalendarEventId != this.bangleCalendarEventId) {
+            return false;
+        }
         event.id = this.id;
+        event.clockFace = this.clockFace;
         event.bangleCalendarEventId = this.bangleCalendarEventId;
         event.skipped = this.skipped;
         event.trackedEventBoundary = this.trackedEventBoundary;
@@ -206,8 +211,8 @@ class CalendarEvent {
         }
         return this.description;
     }
-    displayTimeRemaining() {
-        return this.getTrackedEventDate().timeRemainingAsString();
+    displayTimeRemaining(showSeconds) {
+        return this.getTrackedEventDate().timeRemainingAsString(showSeconds);
     }
     durationMinutes() {
         var durationMillis = this.endTime.unixTimestampMillis() - this.startTime.unixTimestampMillis();
@@ -216,16 +221,19 @@ class CalendarEvent {
 }
 
 class CalendarEvents {
-    constructor(clockFace, events, alarmManager) {
-        this.clockFace = clockFace;
+    constructor(events, alarmManager) {
+        this.clockFace = new ClockFace(new ClockInterval(), eventsObj);
         this.selectedEvent = 0;
         this.events = events;
         this.alarmManager = alarmManager;
         this.refocusTimeout = undefined;
     }
-    eventAlarmHandler(clockFace, event) {
+    setClockFace(clockFace) {
+        this.clockFace = clockFace;
+    }
+    eventAlarmHandler(event) {
         this.selectEvent(event);
-        this.clockFace.redrawAll(this);
+        this.clockFace.redrawAll();
         Bangle.setLCDPower(1);
         Bangle.buzz(1e3).then(() => {
             return new Promise(resolve => setTimeout(resolve, 500));
@@ -243,7 +251,6 @@ class CalendarEvents {
         var maxEventTimeOffset = 1e3 * 60 * 60 * 24;
         for (var i = 0; i < calendar.length; i++) {
             var calendarEvent = calendar[i];
-            console.log(calendarEvent);
             var calStartEventTimeMillis = calendarEvent.timestamp * 1e3;
             var calEndEventTimeMillis = (calendarEvent.timestamp + calendarEvent.durationInSeconds) * 1e3;
             if (calEndEventTimeMillis > now.getTime() + maxEventTimeOffset || calEndEventTimeMillis < now.getTime() - maxEventTimeOffset) {
@@ -254,7 +261,7 @@ class CalendarEvents {
             }
             var newEvent = new CalendarEvent(this.clockFace, calendarEvent.title, calendarEvent.description, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
             newEvent.setAlarmHandler(() => {
-                this.eventAlarmHandler(this.clockFace, newEvent);
+                this.eventAlarmHandler(newEvent);
             });
             newEvent.setBangleCalendarEventId(calendarEvent.id);
             if (this.addEvent(newEvent)) {
@@ -268,11 +275,11 @@ class CalendarEvents {
     }
     addEvent(event) {
         event.setAlarmHandler(() => {
-            this.eventAlarmHandler(this.clockFace, event);
+            this.eventAlarmHandler(event);
         });
         for (var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
-            if (e.id == event.id) {
+            if (e.bangleCalendarEventId == event.bangleCalendarEventId) {
                 return e.update(event);
             }
         }
@@ -339,7 +346,7 @@ class CalendarEvents {
         this.refocusTimeout = setTimeout(() => {
             var e = this.selectUpcomingEvent();
             this.clearRefocusTimeout();
-            this.clockFace.redrawAll(this);
+            this.clockFace.redrawAll();
         }, 5e3);
     }
     clearRefocusTimeout() {
@@ -379,20 +386,20 @@ class CalendarUpdater {
                     }));
                     E.showAlert("Request sent to the phone").then(() => {
                         this.readCalendarDataAndUpdate();
-                        this.clockFace.redrawAll(this.events);
+                        this.clockFace.redrawAll();
                     });
                     break;
 
                   case 3:
                   default:
                     this.readCalendarDataAndUpdate();
-                    this.clockFace.redrawAll(this.events);
+                    this.clockFace.redrawAll();
                     return;
                 }
             });
         } else {
             E.showAlert("You are not connected").then(() => {
-                this.clockFace.redrawAll(this.events);
+                this.clockFace.redrawAll();
             });
         }
     }
@@ -405,7 +412,7 @@ class CalendarUpdater {
         if (!calendarJSON) {
             E.showAlert("No calendar data found.").then(() => {
                 E.showAlert().then(() => {
-                    this.clockFace.redrawAll(this.events);
+                    this.clockFace.redrawAll();
                 });
             });
             return;
@@ -413,7 +420,7 @@ class CalendarUpdater {
             var updateCount = this.events.updateFromCalendar(calendarJSON);
             E.showAlert("Got calendar data. Updated " + updateCount + ".").then(() => {
                 E.showAlert().then(() => {
-                    this.clockFace.redrawAll(this.events);
+                    this.clockFace.redrawAll();
                 });
             });
         }
@@ -423,18 +430,23 @@ class CalendarUpdater {
 "use strict";
 
 class ClockFace {
-    redrawAll(eventsObj) {
+    constructor(clockInterval, eventsObj) {
+        this.clockInterval = clockInterval;
+        this.eventsObj = eventsObj;
+    }
+    redrawAll() {
         g.clear();
         Bangle.drawWidgets();
-        this.draw(eventsObj);
+        this.draw();
     }
-    draw(eventsObj) {
+    draw() {
         var now = new MyDate();
-        var e = eventsObj.getSelectedEvent();
+        var e = this.eventsObj.getSelectedEvent();
         if (!e) {
             E.showMessage("No events.");
             return;
         }
+        var showSeconds = Math.abs(e.getTrackedEventDate().minutesUntil()) < 10;
         var X = 176 * .5;
         var Y = 176 * .75;
         g.reset();
@@ -442,7 +454,7 @@ class ClockFace {
         g.setFont("Vector", 20);
         g.drawString(e.displayName(), X, Y - 60, true);
         g.setFont("Vector", 40);
-        g.drawString(e.displayTimeRemaining(), X, Y, true);
+        g.drawString(e.displayTimeRemaining(showSeconds), X, Y, true);
         var leftTime = now.formattedTime();
         var rightTime = e.getTrackedEventDate().formattedTime();
         var midTime = e.startTime.formattedTime() + "/";
@@ -556,24 +568,24 @@ class Meter {
 
 "use strict";
 
-function setupBangleEvents(clockFace, minuteInterval, eventsObj) {
+function setupBangleEvents(clockFace, clockInterval, eventsObj) {
     Bangle.on("swipe", function(directionLR, directionUD) {
         if (directionLR == -1 && directionUD == 0) {
             eventsObj.selectNextEvent();
-            clockFace.redrawAll(eventsObj);
+            clockFace.redrawAll();
         }
         if (directionLR == 1 && directionUD == 0) {
             eventsObj.selectPreviousEvent();
-            clockFace.redrawAll(eventsObj);
+            clockFace.redrawAll();
         }
         if (directionUD == -1 && directionLR == 0) {
             var e = eventsObj.getSelectedEvent();
             var skipped = e.toggleSkip();
-            clockFace.redrawAll(eventsObj);
+            clockFace.redrawAll();
             if (skipped) {
                 setTimeout(() => {
                     eventsObj.selectUpcomingEvent();
-                    clockFace.redrawAll(eventsObj);
+                    clockFace.redrawAll();
                 }, 200);
             }
         }
@@ -588,7 +600,7 @@ function setupBangleEvents(clockFace, minuteInterval, eventsObj) {
         }
         if (xy.y > g.getHeight() - 50) {
             eventsObj.getSelectedEvent().toggleTrackedEventBoundary();
-            clockFace.redrawAll(eventsObj);
+            clockFace.redrawAll();
         } else if (xy.y > 50) {
             ignoreTouch = true;
             setTimeout(() => {
@@ -598,35 +610,122 @@ function setupBangleEvents(clockFace, minuteInterval, eventsObj) {
                     }
                 }).then(() => {
                     ignoreTouch = false;
-                    clockFace.redrawAll(eventsObj);
+                    clockFace.redrawAll();
                 });
             }, 200);
         }
     });
     Bangle.on("lcdPower", on => {
-        if (minuteInterval) {
-            clearInterval(minuteInterval);
-        }
+        clockInterval.disableMinuteInterval();
         if (on) {
-            minuteInterval = setInterval(() => {
-                clockFace.draw(eventsObj);
-            }, 60 * 1e3);
-            clockFace.draw(eventsObj);
+            clockInterval.enableMinuteInterval();
+            clockFace.redrawAll();
         }
     });
 }
 
 "use strict";
 
-require("Font7x11Numeric7Seg").add(Graphics);
+class ClockInterval {
+    constructor() {
+        this.tickHandler = () => {};
+        this.minuteIntervalEnabled = false;
+        this.secondIntervalEnabled = false;
+    }
+    setTickHandler(tickHandler) {
+        this.tickHandler = tickHandler;
+    }
+    enableMinuteInterval() {
+        this.minuteIntervalEnabled = true;
+        if (this.minuteTimeout) {
+            return;
+        }
+        this.scheduleNextMinuteTick();
+    }
+    disableMinuteInterval() {
+        if (this.minuteTimeout) {
+            clearInterval(this.minuteTimeout);
+        }
+        this.minuteTimeout = undefined;
+        this.minuteIntervalEnabled = false;
+    }
+    scheduleNextMinuteTick() {
+        this.minuteTimeout = setTimeout(() => {
+            this.tick();
+        }, this.millisToNextMinute());
+    }
+    millisToNextMinute() {
+        const now = new Date();
+        return 60 * 1e3 - (now.getSeconds() * 1e3 + now.getMilliseconds());
+    }
+    tick() {
+        if (this.minuteIntervalEnabled) {
+            this.scheduleNextMinuteTick();
+            this.tickHandler(this);
+        } else if (this.secondIntervalEnabled) {
+            this.scheduleNextSecondTick();
+            this.tickHandler(this);
+        }
+    }
+    isSecondIntervalEnabled() {
+        return this.secondIntervalEnabled;
+    }
+    enableSecondInterval() {
+        this.secondIntervalEnabled = true;
+        if (this.secondTimeout) {
+            return;
+        }
+        this.scheduleNextSecondTick();
+    }
+    disableSecondInterval() {
+        if (this.secondTimeout) {
+            clearInterval(this.secondTimeout);
+        }
+        this.secondTimeout = undefined;
+        this.secondIntervalEnabled = false;
+    }
+    scheduleNextSecondTick() {
+        this.secondTimeout = setTimeout(() => {
+            this.tick();
+        }, this.millisToNextSecond());
+    }
+    millisToNextSecond() {
+        return 1e3 - new Date().getMilliseconds();
+    }
+    useSecondInterval() {
+        if (!this.secondIntervalEnabled) {
+            this.disableMinuteInterval();
+            this.enableSecondInterval();
+        }
+    }
+    useMinuteInterval() {
+        if (!this.minuteIntervalEnabled) {
+            this.disableSecondInterval();
+            this.enableMinuteInterval();
+        }
+    }
+    toggleBetweenSecondAndMinuteIntervals() {
+        if (this.minuteIntervalEnabled) {
+            this.useSecondInterval();
+        } else {
+            this.useMinuteInterval();
+        }
+    }
+}
 
-var clockFace = new ClockFace();
+"use strict";
+
+require("Font7x11Numeric7Seg").add(Graphics);
 
 var alarmManager = new AlarmManager();
 
-var eventsObj = new CalendarEvents(clockFace, [], alarmManager);
+var clockInterval = new ClockInterval();
 
-eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-08-20", "5:32pm"), new MyDate("2022-08-20", "5:34pm")));
+var eventsObj = new CalendarEvents([], alarmManager);
+
+var clockFace = new ClockFace(clockInterval, eventsObj);
+
+eventsObj.setClockFace(clockFace);
 
 eventsObj.initAlarms();
 
@@ -638,10 +737,12 @@ Bangle.setUI("clock");
 
 Bangle.loadWidgets();
 
-clockFace.redrawAll(eventsObj);
+clockFace.redrawAll();
 
-var minuteInterval = setInterval(() => {
-    clockFace.redrawAll(eventsObj);
-}, 60 * 1e3);
+clockInterval.setTickHandler(() => {
+    clockFace.redrawAll();
+});
 
-setupBangleEvents(clockFace, minuteInterval, eventsObj);
+clockInterval.useMinuteInterval();
+
+setupBangleEvents(clockFace, clockInterval, eventsObj);

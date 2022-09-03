@@ -1,17 +1,27 @@
 class ClockFace {
-    redrawAll(eventsObj: CalendarEvents) {
-        g.clear();
-        Bangle.drawWidgets();
-        this.draw(eventsObj);
+    private clockInterval: ClockInterval;
+    private eventsObj: CalendarEvents;
+
+    constructor(clockInterval: ClockInterval, eventsObj: CalendarEvents) {
+        this.clockInterval = clockInterval;
+        this.eventsObj = eventsObj;
     }
 
-    draw(eventsObj: CalendarEvents) {
+    public redrawAll() {
+        g.clear();
+        Bangle.drawWidgets();
+        this.draw();
+    }
+
+    private draw() {
         var now = new MyDate();
-        var e = eventsObj.getSelectedEvent();
+        var e = this.eventsObj.getSelectedEvent();
         if(!e) {
             E.showMessage("No events.");
             return;
         }
+
+        var showSeconds = Math.abs(e.getTrackedEventDate().minutesUntil()) < 10;
 
         var X = 176*0.5;
         var Y = 176*0.75;
@@ -24,7 +34,7 @@ class ClockFace {
         g.setFont("Vector", 20);
         g.drawString(e.displayName(), X, Y-60, true);
         g.setFont("Vector", 40);
-        g.drawString(e.displayTimeRemaining(), X, Y, true);
+        g.drawString(e.displayTimeRemaining(showSeconds), X, Y, true);
 
         var leftTime = now.formattedTime();
         var rightTime = e.getTrackedEventDate().formattedTime();

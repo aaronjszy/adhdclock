@@ -22,18 +22,18 @@ class CalendarUpdater {
                         this.gbSend(JSON.stringify({t:"force_calendar_sync", ids: cal.map((e: any)=>e.id)}));
                         E.showAlert("Request sent to the phone").then(()=>{
                             this.readCalendarDataAndUpdate();
-                            this.clockFace.redrawAll(this.events);
+                            this.clockFace.redrawAll();
                         });
                         break;
                     case 3:
                     default:
                         this.readCalendarDataAndUpdate();
-                        this.clockFace.redrawAll(this.events);
+                        this.clockFace.redrawAll();
                         return;
                 }
             });
         } else {
-            E.showAlert("You are not connected").then(()=>{this.clockFace.redrawAll(this.events)});
+            E.showAlert("You are not connected").then(()=>{this.clockFace.redrawAll()});
         }
     }
 
@@ -47,7 +47,7 @@ class CalendarUpdater {
         if(!calendarJSON) {
             E.showAlert("No calendar data found.").then(() => {
                 E.showAlert().then(() => {
-                    this.clockFace.redrawAll(this.events);
+                    this.clockFace.redrawAll();
                 });
             });
             return;
@@ -55,7 +55,7 @@ class CalendarUpdater {
             var updateCount = this.events.updateFromCalendar(calendarJSON);
             E.showAlert("Got calendar data. Updated "+updateCount+".").then(() => {
                 E.showAlert().then(() => {
-                    this.clockFace.redrawAll(this.events);
+                    this.clockFace.redrawAll();
                 });
             });
         }

@@ -3,7 +3,6 @@ class MyDate {
     date: Date;
 
     constructor(dateStr?: string|number, timeStr?: string) {
-        console.log();
         if(timeStr) {
             let timeParts = timeStr.split(":");
             let hourStr = (timeParts[0] == "12") ? "0" : timeParts[0];
@@ -63,7 +62,7 @@ class MyDate {
         return ((this.date.getTime()-now.getTime()) / 1000 / 60)+1;
     }
 
-    timeRemainingAsString(): string {
+    timeRemainingAsString(showSeconds: boolean): string {
         var secondsUntil = this.secondsUntil();
         var sign = (secondsUntil < 0) ? "-" : "";
         var secondsUntilAbs = Math.abs(secondsUntil)
@@ -72,6 +71,10 @@ class MyDate {
         var minutesToEventAbs = totalMinutesToEventAbs % 60;
 
         if(hoursToEventAbs == 0) {
+            if(showSeconds) {
+                var secondsDisplay = zeroPad(Math.floor(secondsUntilAbs % 60));
+                return `${sign}${minutesToEventAbs}:${secondsDisplay}`;
+            }
             return `${sign}${minutesToEventAbs}`
         } else {
             return `${sign}${hoursToEventAbs}:${zeroPad(minutesToEventAbs)}`

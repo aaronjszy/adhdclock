@@ -1,23 +1,23 @@
 
-function setupBangleEvents(clockFace: ClockFace, minuteInterval: NodeJS.Timer, eventsObj: CalendarEvents) {
+function setupBangleEvents(clockFace: ClockFace, clockInterval: ClockInterval, eventsObj: CalendarEvents) {
 
     Bangle.on('swipe', function(directionLR, directionUD) {
         if(directionLR == -1 && directionUD == 0) {
             eventsObj.selectNextEvent();
-            clockFace.redrawAll(eventsObj);
+            clockFace.redrawAll();
         }
         if(directionLR == 1 && directionUD == 0) {
             eventsObj.selectPreviousEvent();
-            clockFace.redrawAll(eventsObj);
+            clockFace.redrawAll();
         }
         if(directionUD == -1 && directionLR == 0) {
             var e = eventsObj.getSelectedEvent();
             var skipped = e.toggleSkip();
-            clockFace.redrawAll(eventsObj);
+            clockFace.redrawAll();
             if(skipped) {
                 setTimeout(()=>{
                     eventsObj.selectUpcomingEvent()
-                    clockFace.redrawAll(eventsObj);    
+                    clockFace.redrawAll();    
                 }, 200);
             }
         }
@@ -39,7 +39,7 @@ function setupBangleEvents(clockFace: ClockFace, minuteInterval: NodeJS.Timer, e
             eventsObj.getSelectedEvent().toggleTrackedEventBoundary();
 
             // Redraw to show the updated state
-            clockFace.redrawAll(eventsObj);
+            clockFace.redrawAll();
 
         // Top area except for gadgets
         } else if(xy.y > 50) {
@@ -51,19 +51,17 @@ function setupBangleEvents(clockFace: ClockFace, minuteInterval: NodeJS.Timer, e
                     buttons: {Ok: 1}
                 }).then(()=>{
                     ignoreTouch = false;
-                    clockFace.redrawAll(eventsObj);
+                    clockFace.redrawAll();
                 });
             }, 200);
         }
     });
 
     Bangle.on('lcdPower', on => {
-        if (minuteInterval) {
-            clearInterval(minuteInterval);
-        }
+        clockInterval.disableMinuteInterval();
         if (on) {
-            minuteInterval = setInterval(()=>{clockFace.draw(eventsObj)}, 60*1000);
-            clockFace.draw(eventsObj); // draw immediately
+            clockInterval.enableMinuteInterval();
+            clockFace.redrawAll(); // draw immediately
         }
     });
 }

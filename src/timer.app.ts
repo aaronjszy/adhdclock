@@ -1,10 +1,14 @@
 require("Font7x11Numeric7Seg").add(Graphics);
 
-var clockFace = new ClockFace();
-
 var alarmManager = new AlarmManager();
-var eventsObj = new CalendarEvents(clockFace, [], alarmManager);
-eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-08-20", "5:32pm"), new MyDate("2022-08-20", "5:34pm")));
+var clockInterval = new ClockInterval();
+var eventsObj = new CalendarEvents([], alarmManager);
+
+// TODO This is gross, I should make calendarevents not require eventsobj.
+var clockFace = new ClockFace(clockInterval, eventsObj);
+eventsObj.setClockFace(clockFace);
+
+// eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-08-20", "5:32pm"), new MyDate("2022-08-20", "5:34pm")));
 eventsObj.initAlarms();
 eventsObj.selectUpcomingEvent();
 
@@ -12,7 +16,11 @@ eventsObj.selectUpcomingEvent();
 
 Bangle.setUI("clock");
 Bangle.loadWidgets();
-clockFace.redrawAll(eventsObj);
-var minuteInterval = setInterval(() => {clockFace.redrawAll(eventsObj)}, 60*1000);
+clockFace.redrawAll();
 
-setupBangleEvents(clockFace, minuteInterval, eventsObj);
+clockInterval.setTickHandler(() => {
+    clockFace.redrawAll();
+});
+clockInterval.useMinuteInterval();
+
+setupBangleEvents(clockFace, clockInterval, eventsObj);

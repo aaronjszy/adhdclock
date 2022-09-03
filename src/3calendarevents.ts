@@ -33,14 +33,24 @@ class CalendarEvent {
         this.alarmHandler = alarmHandler;
     }
 
-    update(event: CalendarEvent) {
+    update(event: CalendarEvent): boolean {
+        // This check is here just in case the provided event is not the same as this event. This should not happen.
+        if(event.bangleCalendarEventId != this.bangleCalendarEventId) {
+            return false;
+        }
+
+        // set equivalent event properties for fields we dont want included in the isModified check
         event.id = this.id;
+        event.clockFace = this.clockFace;
         event.bangleCalendarEventId = this.bangleCalendarEventId;
         event.skipped = this.skipped;
         event.trackedEventBoundary = this.trackedEventBoundary;
         event.alarmHandler = this.alarmHandler;
+
         var isModified = JSON.stringify(event) != JSON.stringify(this);
 
+        // Update the event properties from the provided matching event
+        // Note that were not updating the event id
         this.name = event.name;
         this.description = event.description;
         this.startTime = event.startTime;
@@ -104,8 +114,8 @@ class CalendarEvent {
         return this.description;
     }
 
-    displayTimeRemaining(): string {
-        return this.getTrackedEventDate().timeRemainingAsString();
+    displayTimeRemaining(showSeconds: boolean): string {
+        return this.getTrackedEventDate().timeRemainingAsString(showSeconds);
     }
 
     durationMinutes(): number {
@@ -121,17 +131,23 @@ class CalendarEvents {
     refocusTimeout: NodeJS.Timeout | undefined;
     alarmManager: AlarmManager;
 
-    constructor(clockFace: ClockFace, events: CalendarEvent[], alarmManager: AlarmManager) {
-        this.clockFace = clockFace;
+    constructor(events: CalendarEvent[], alarmManager: AlarmManager) {
+        // TODO this is gross, we dont use this but i need to add it to satisfy typescript
+        this.clockFace = new ClockFace(new ClockInterval(), eventsObj);
+
         this.selectedEvent = 0;
         this.events = events;
         this.alarmManager = alarmManager;
         this.refocusTimeout = undefined;
     }
 
+    public setClockFace(clockFace: ClockFace) {
+        this.clockFace = clockFace;
+    }
+
     public eventAlarmHandler(event: CalendarEvent) {
         this.selectEvent(event);
-        this.clockFace.redrawAll(this);
+        this.clockFace.redrawAll();
 
         Bangle.setLCDPower(1);
         Bangle.buzz(1000).then(() => {
@@ -151,7 +167,6 @@ class CalendarEvents {
         var maxEventTimeOffset = 1000*60*60*24;
         for(var i = 0; i < calendar.length; i++) {
             var calendarEvent = calendar[i];
-            console.log(calendarEvent);
             var calStartEventTimeMillis = calendarEvent.timestamp*1000;
             var calEndEventTimeMillis = (calendarEvent.timestamp+calendarEvent.durationInSeconds)*1000;
 
@@ -180,7 +195,7 @@ class CalendarEvents {
         event.setAlarmHandler(()=>{this.eventAlarmHandler(event)});
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
-            if(e.id == event.id) {
+            if(e.bangleCalendarEventId == event.bangleCalendarEventId) {
                 return e.update(event);
             }
         }
@@ -257,7 +272,7 @@ class CalendarEvents {
         this.refocusTimeout = setTimeout(()=>{
             var e = this.selectUpcomingEvent();
             this.clearRefocusTimeout();
-            this.clockFace.redrawAll(this);
+            this.clockFace.redrawAll();
         }, 5000);
     }
 
