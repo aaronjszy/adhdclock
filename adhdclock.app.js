@@ -562,7 +562,7 @@ class ClockFace {
         var strMetrics = g.stringMetrics(timeRemaining);
         g.drawString(timeRemaining, X, Y, false);
         if (showSeconds) {
-            g.setFont("Vector", 25);
+            g.setFont("Vector", 22);
             g.setFontAlign(-1, 1);
             g.drawString(e.displaySecondsRemaining(), X + strMetrics.width / 2 + 3, Y - 4, false);
         }
