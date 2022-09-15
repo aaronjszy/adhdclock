@@ -646,7 +646,8 @@ class Meter {
         var segmentWidth = this.maxMeterWidth / this.segmentCountInt;
         for (var i = 1; i <= this.segmentCountInt; i++) {
             var x = this.padding + segmentWidth * i;
-            fillLine(x, this.meterTopOffsetPos, x, this.meterTopOffsetPos + this.height, 2);
+            g.drawLine(x, this.meterTopOffsetPos, x, this.meterTopOffsetPos + this.height);
+            g.drawLine(x - 1, this.meterTopOffsetPos, x - 1, this.meterTopOffsetPos + this.height);
         }
         g.setColor(originalColor);
     }
@@ -832,8 +833,6 @@ var eventsObj = new CalendarEvents([], alarmManager);
 var clockFace = new ClockFace(clockInterval, eventsObj);
 
 eventsObj.setClockFace(clockFace);
-
-eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-09-14", "5:00pm"), new MyDate("2022-09-14", "5:15pm")));
 
 eventsObj.initAlarms();
 

@@ -8,7 +8,7 @@ var eventsObj = new CalendarEvents([], alarmManager);
 var clockFace = new ClockFace(clockInterval, eventsObj);
 eventsObj.setClockFace(clockFace);
 
-eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-09-14", "5:00pm"), new MyDate("2022-09-14", "5:15pm")));
+// eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-09-14", "6:20pm"), new MyDate("2022-09-14", "8:40pm")));
 
 eventsObj.initAlarms();
 eventsObj.selectUpcomingEvent();

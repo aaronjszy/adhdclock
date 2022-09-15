@@ -162,7 +162,8 @@ class Meter {
         var segmentWidth = this.maxMeterWidth / this.segmentCountInt;
         for(var i = 1; i <= this.segmentCountInt; i++) {
             var x = this.padding + (segmentWidth * i);
-            fillLine(x, this.meterTopOffsetPos, x, this.meterTopOffsetPos+this.height, 2);
+            g.drawLine(x, this.meterTopOffsetPos, x, this.meterTopOffsetPos+this.height);
+            g.drawLine(x-1, this.meterTopOffsetPos, x-1, this.meterTopOffsetPos+this.height);
         }
     
         g.setColor(originalColor);
