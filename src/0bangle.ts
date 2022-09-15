@@ -10,6 +10,7 @@ class Bluetooth {
 
 class g {
     static clear() {}
+    static clearRect(rect: any) {}
     static reset() {}
     static setFontAlign(x: number, y: number) {}
     static drawString(val: string, x: number, y: number, b: boolean) {}
@@ -19,6 +20,7 @@ class g {
     static getWidth(): any {}
     static getHeight(): any {}
     static drawLine(x1: number, y1: number, x2: number, y2: number) {}
+    static drawLineAA(x1: number, y1: number, x2: number, y2: number) {}
     static getColor(): any {return '';}
     static setColor(hexColor: string) {}
     static drawRect(rect: any) {}

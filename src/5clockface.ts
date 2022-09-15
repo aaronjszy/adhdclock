@@ -8,8 +8,7 @@ class ClockFace {
     }
 
     public redrawAll() {
-        g.clear();
-        Bangle.drawWidgets();
+        g.clearRect({x: 0, y: 24, x2: g.getHeight(), y2: g.getWidth()});
         this.draw();
     }
 
@@ -65,13 +64,8 @@ class ClockFace {
 
         // Cross out skipped items
         if(e.skipped) {
-            g.drawLine(0, 0, g.getWidth(), g.getHeight());
-            g.drawLine(1, 0, g.getWidth()+1, g.getHeight());
-            g.drawLine(2, 0, g.getWidth()+2, g.getHeight());
-
-            g.drawLine(g.getWidth(), 0, 0, g.getHeight());
-            g.drawLine(g.getWidth()-1, 0, 0, g.getHeight()-1);
-            g.drawLine(g.getWidth()-2, 0, 0, g.getHeight()-2);
+            fillLine(0, 25, g.getWidth(), g.getHeight(), 3);
+            fillLine(g.getWidth(), 25, 0, g.getHeight(), 3);
         }
     }
 }
@@ -168,8 +162,7 @@ class Meter {
         var segmentWidth = this.maxMeterWidth / this.segmentCountInt;
         for(var i = 1; i <= this.segmentCountInt; i++) {
             var x = this.padding + (segmentWidth * i);
-            g.drawLine(x, this.meterTopOffsetPos, x, this.meterTopOffsetPos+this.height);
-            g.drawLine(x-1, this.meterTopOffsetPos, x-1, this.meterTopOffsetPos+this.height);
+            fillLine(x, this.meterTopOffsetPos, x, this.meterTopOffsetPos+this.height, 2);
         }
     
         g.setColor(originalColor);

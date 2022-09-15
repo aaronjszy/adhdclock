@@ -128,6 +128,19 @@ class AlarmManager {
 
 "use strict";
 
+function fillLine(x1, y1, x2, y2, lineWidth) {
+    var dx, dy, d;
+    lineWidth = (lineWidth - 1) / 2;
+    dx = x2 - x1;
+    dy = y2 - y1;
+    d = Math.sqrt(dx * dx + dy * dy);
+    dx = Math.round(dx * lineWidth / d);
+    dy = Math.round(dy * lineWidth / d);
+    g.fillPoly([ x1 + dx, y1 - dy, x1 - dx, y1 + dy, x2 - dx, y2 + dy, x2 + dx, y2 - dy ]);
+}
+
+"use strict";
+
 function zeroPad(n) {
     return ("0" + n.toString()).substr(-2);
 }
@@ -522,8 +535,12 @@ class ClockFace {
         this.eventsObj = eventsObj;
     }
     redrawAll() {
-        g.clear();
-        Bangle.drawWidgets();
+        g.clearRect({
+            x: 0,
+            y: 24,
+            x2: g.getHeight(),
+            y2: g.getWidth()
+        });
         this.draw();
     }
     draw() {
@@ -563,12 +580,8 @@ class ClockFace {
         g.drawString(midTime + rightTime, g.getWidth() - 5, g.getHeight() - 2, true);
         new Meter(e).draw();
         if (e.skipped) {
-            g.drawLine(0, 0, g.getWidth(), g.getHeight());
-            g.drawLine(1, 0, g.getWidth() + 1, g.getHeight());
-            g.drawLine(2, 0, g.getWidth() + 2, g.getHeight());
-            g.drawLine(g.getWidth(), 0, 0, g.getHeight());
-            g.drawLine(g.getWidth() - 1, 0, 0, g.getHeight() - 1);
-            g.drawLine(g.getWidth() - 2, 0, 0, g.getHeight() - 2);
+            fillLine(0, 25, g.getWidth(), g.getHeight(), 3);
+            fillLine(g.getWidth(), 25, 0, g.getHeight(), 3);
         }
     }
 }
@@ -633,8 +646,7 @@ class Meter {
         var segmentWidth = this.maxMeterWidth / this.segmentCountInt;
         for (var i = 1; i <= this.segmentCountInt; i++) {
             var x = this.padding + segmentWidth * i;
-            g.drawLine(x, this.meterTopOffsetPos, x, this.meterTopOffsetPos + this.height);
-            g.drawLine(x - 1, this.meterTopOffsetPos, x - 1, this.meterTopOffsetPos + this.height);
+            fillLine(x, this.meterTopOffsetPos, x, this.meterTopOffsetPos + this.height, 2);
         }
         g.setColor(originalColor);
     }
