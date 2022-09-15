@@ -550,7 +550,7 @@ class ClockFace {
             E.showMessage("No events.");
             return;
         }
-        var showSeconds = Math.abs(e.getTrackedEventDate().minutesUntil()) < 10;
+        var showSeconds = Math.abs(e.getTrackedEventDate().minutesUntil()) <= 11;
         var X = 176 * .5;
         var Y = 176 * .75;
         g.reset();
@@ -564,7 +564,7 @@ class ClockFace {
         if (showSeconds) {
             g.setFont("Vector", 25);
             g.setFontAlign(-1, 1);
-            g.drawString(e.displaySecondsRemaining(), X + strMetrics.width / 2 + 3, Y - 3, false);
+            g.drawString(e.displaySecondsRemaining(), X + strMetrics.width / 2 + 3, Y - 4, false);
         }
         var leftTime = now.formattedTime();
         var rightTime = e.getTrackedEventDate().formattedTime();
