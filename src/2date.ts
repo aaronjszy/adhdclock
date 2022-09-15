@@ -62,7 +62,7 @@ class MyDate {
         return ((this.date.getTime()-now.getTime()) / 1000 / 60)+1;
     }
 
-    timeRemainingAsString(showSeconds: boolean): string {
+    timeRemainingAsString(): string {
         var secondsUntil = this.secondsUntil();
         var sign = (secondsUntil < 0) ? "-" : "";
         var secondsUntilAbs = Math.abs(secondsUntil)
@@ -71,14 +71,21 @@ class MyDate {
         var minutesToEventAbs = totalMinutesToEventAbs % 60;
 
         if(hoursToEventAbs == 0) {
-            if(showSeconds) {
-                var secondsDisplay = zeroPad(Math.floor(secondsUntilAbs % 60));
-                return `${sign}${minutesToEventAbs}:${secondsDisplay}`;
-            }
             return `${sign}${minutesToEventAbs}`
         } else {
+            // if(showSeconds) {
+            //     var secondsDisplay = zeroPad(Math.floor(secondsUntilAbs % 60));
+            //     return `${sign}${hoursToEventAbs}:${zeroPad(minutesToEventAbs)}:${secondsDisplay}`
+            // }
             return `${sign}${hoursToEventAbs}:${zeroPad(minutesToEventAbs)}`
         }
+    }
+
+    secondsRemainingAsString(): string {
+        var secondsUntil = this.secondsUntil();
+        var secondsUntilAbs = Math.abs(secondsUntil)
+        var secondsDisplay = zeroPad(Math.floor(secondsUntilAbs % 60));
+        return `${secondsDisplay}`;
     }
 
     equals(other: MyDate): boolean {

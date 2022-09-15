@@ -13,6 +13,8 @@ class g {
     static reset() {}
     static setFontAlign(x: number, y: number) {}
     static drawString(val: string, x: number, y: number, b: boolean) {}
+    static stringWidth(str: string): number {return 0}
+    static stringMetrics(str: string): any {return {width: 0, height: 0};}
     static setFont(font: string, size: number) {}
     static getWidth(): any {}
     static getHeight(): any {}
@@ -33,7 +35,10 @@ class Bangle {
         return new Promise((resolve, reject) => {});
     }
     static setLCDPower(power: number) {}
-}
+    static http(url: string): Promise<any> {
+        return new Promise((resolve, reject) => {});
+    }
+};
     
 class E {
     static showMessage(msg: string): Promise<any> {

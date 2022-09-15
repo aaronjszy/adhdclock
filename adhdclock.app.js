@@ -1,5 +1,87 @@
 "use strict";
 
+class RawComponent {
+    constructor() {
+        this.name = "";
+        this.properties = [];
+        this.components = [];
+    }
+}
+
+class TimezoneComponent {
+    constructor(component) {
+        this.component = component;
+    }
+}
+
+class EventComponent {
+    constructor(component) {
+        this.component = component;
+    }
+}
+
+class UnsupportedComponent {
+    constructor(component) {
+        this.component = component;
+    }
+}
+
+class Calendar {
+    constructor(events, timezones, unsupported) {
+        this.events = events;
+        this.timezones = timezones;
+        this.unsupported = unsupported;
+    }
+}
+
+function parseComponent(lines, i) {
+    var rawComponent = new RawComponent();
+    rawComponent.name = lines[i].substring(6);
+    rawComponent.properties = [];
+    rawComponent.components = [];
+    i++;
+    while (lines[i].indexOf("END:" + rawComponent.name) !== 0) {
+        if (lines[i].indexOf("BEGIN:") === 0) {
+            rawComponent.components.push(parseComponent(lines, i));
+        } else {
+            rawComponent.properties.push(lines[i]);
+        }
+        i++;
+    }
+    var component = {};
+    if (rawComponent.name === "VEVENT") {
+        component = new EventComponent(rawComponent);
+    } else if (rawComponent.name === "VTIMEZONE") {
+        component = new TimezoneComponent(rawComponent);
+    } else {
+        component = new UnsupportedComponent(rawComponent);
+    }
+    return component;
+}
+
+function parseICal(data) {
+    var lines = data.split("\r\n");
+    var events = [];
+    var timezones = [];
+    var unsupported = [];
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (line.indexOf("BEGIN:") === 0) {
+            var component = parseComponent(lines, i);
+            if (component.name === "VEVENT") {
+                events.push(component);
+            } else if (component.name === "VTIMEZONE") {
+                timezones.push(component);
+            } else {
+                unsupported.push(component);
+            }
+        }
+    }
+    return new Calendar(events, timezones, unsupported);
+}
+
+"use strict";
+
 class Alarm {
     constructor(id, date, callback) {
         this.id = id;
@@ -104,7 +186,7 @@ class MyDate {
         var now = new Date();
         return (this.date.getTime() - now.getTime()) / 1e3 / 60 + 1;
     }
-    timeRemainingAsString(showSeconds) {
+    timeRemainingAsString() {
         var secondsUntil = this.secondsUntil();
         var sign = secondsUntil < 0 ? "-" : "";
         var secondsUntilAbs = Math.abs(secondsUntil);
@@ -112,14 +194,16 @@ class MyDate {
         var hoursToEventAbs = Math.floor(totalMinutesToEventAbs / 60);
         var minutesToEventAbs = totalMinutesToEventAbs % 60;
         if (hoursToEventAbs == 0) {
-            if (showSeconds) {
-                var secondsDisplay = zeroPad(Math.floor(secondsUntilAbs % 60));
-                return `${sign}${minutesToEventAbs}:${secondsDisplay}`;
-            }
             return `${sign}${minutesToEventAbs}`;
         } else {
             return `${sign}${hoursToEventAbs}:${zeroPad(minutesToEventAbs)}`;
         }
+    }
+    secondsRemainingAsString() {
+        var secondsUntil = this.secondsUntil();
+        var secondsUntilAbs = Math.abs(secondsUntil);
+        var secondsDisplay = zeroPad(Math.floor(secondsUntilAbs % 60));
+        return `${secondsDisplay}`;
     }
     equals(other) {
         return this.date.getTime() == other.date.getTime();
@@ -211,8 +295,11 @@ class CalendarEvent {
         }
         return this.description;
     }
-    displayTimeRemaining(showSeconds) {
-        return this.getTrackedEventDate().timeRemainingAsString(showSeconds);
+    displayTimeRemaining() {
+        return this.getTrackedEventDate().timeRemainingAsString();
+    }
+    displaySecondsRemaining() {
+        return this.getTrackedEventDate().secondsRemainingAsString();
     }
     durationMinutes() {
         var durationMillis = this.endTime.unixTimestampMillis() - this.startTime.unixTimestampMillis();
@@ -222,7 +309,7 @@ class CalendarEvent {
 
 class CalendarEvents {
     constructor(events, alarmManager) {
-        this.clockFace = new ClockFace(new ClockInterval(), eventsObj);
+        this.clockFace = new ClockFace(new ClockInterval(), this);
         this.selectedEvent = 0;
         this.events = events;
         this.alarmManager = alarmManager;
@@ -294,7 +381,7 @@ class CalendarEvents {
     initAlarms() {
         for (var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
-            e.initAlarms(alarmManager);
+            e.initAlarms(this.alarmManager);
         }
     }
     selectEvent(event) {
@@ -452,9 +539,16 @@ class ClockFace {
         g.reset();
         g.setFontAlign(0, 1);
         g.setFont("Vector", 20);
-        g.drawString(e.displayName(), X, Y - 60, true);
+        g.drawString(e.displayName(), X, Y - 60, false);
         g.setFont("Vector", 40);
-        g.drawString(e.displayTimeRemaining(showSeconds), X, Y, true);
+        var timeRemaining = e.displayTimeRemaining();
+        var strMetrics = g.stringMetrics(timeRemaining);
+        g.drawString(timeRemaining, X, Y, false);
+        if (showSeconds) {
+            g.setFont("Vector", 25);
+            g.setFontAlign(-1, 1);
+            g.drawString(e.displaySecondsRemaining(), X + strMetrics.width / 2 + 3, Y - 3, false);
+        }
         var leftTime = now.formattedTime();
         var rightTime = e.getTrackedEventDate().formattedTime();
         var midTime = e.startTime.formattedTime() + "/";
@@ -727,6 +821,8 @@ var clockFace = new ClockFace(clockInterval, eventsObj);
 
 eventsObj.setClockFace(clockFace);
 
+eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-09-14", "5:00pm"), new MyDate("2022-09-14", "5:15pm")));
+
 eventsObj.initAlarms();
 
 eventsObj.selectUpcomingEvent();
@@ -743,6 +839,6 @@ clockInterval.setTickHandler(() => {
     clockFace.redrawAll();
 });
 
-clockInterval.useMinuteInterval();
+clockInterval.useSecondInterval();
 
 setupBangleEvents(clockFace, clockInterval, eventsObj);

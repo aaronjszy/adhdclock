@@ -114,8 +114,12 @@ class CalendarEvent {
         return this.description;
     }
 
-    displayTimeRemaining(showSeconds: boolean): string {
-        return this.getTrackedEventDate().timeRemainingAsString(showSeconds);
+    displayTimeRemaining(): string {
+        return this.getTrackedEventDate().timeRemainingAsString();
+    }
+
+    displaySecondsRemaining(): string {
+        return this.getTrackedEventDate().secondsRemainingAsString();
     }
 
     durationMinutes(): number {
@@ -133,7 +137,7 @@ class CalendarEvents {
 
     constructor(events: CalendarEvent[], alarmManager: AlarmManager) {
         // TODO this is gross, we dont use this but i need to add it to satisfy typescript
-        this.clockFace = new ClockFace(new ClockInterval(), eventsObj);
+        this.clockFace = new ClockFace(new ClockInterval(), this);
 
         this.selectedEvent = 0;
         this.events = events;
@@ -212,7 +216,7 @@ class CalendarEvents {
     public initAlarms() {
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
-            e.initAlarms(alarmManager);
+            e.initAlarms(this.alarmManager);
         }
     }
 

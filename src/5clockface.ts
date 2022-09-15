@@ -32,9 +32,18 @@ class ClockFace {
         g.setFontAlign(0,1);
 
         g.setFont("Vector", 20);
-        g.drawString(e.displayName(), X, Y-60, true);
+        g.drawString(e.displayName(), X, Y-60, false);
+
         g.setFont("Vector", 40);
-        g.drawString(e.displayTimeRemaining(showSeconds), X, Y, true);
+        var timeRemaining = e.displayTimeRemaining()
+        var strMetrics = g.stringMetrics(timeRemaining);
+        g.drawString(timeRemaining, X, Y, false);
+
+        if(showSeconds) {
+            g.setFont("Vector", 25);
+            g.setFontAlign(-1,1);
+            g.drawString(e.displaySecondsRemaining(), X+(strMetrics.width/2)+3, Y-3, false);
+        }
 
         var leftTime = now.formattedTime();
         var rightTime = e.getTrackedEventDate().formattedTime();

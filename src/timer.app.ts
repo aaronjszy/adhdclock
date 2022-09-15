@@ -8,7 +8,8 @@ var eventsObj = new CalendarEvents([], alarmManager);
 var clockFace = new ClockFace(clockInterval, eventsObj);
 eventsObj.setClockFace(clockFace);
 
-// eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-08-20", "5:32pm"), new MyDate("2022-08-20", "5:34pm")));
+eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-09-14", "5:00pm"), new MyDate("2022-09-14", "5:15pm")));
+
 eventsObj.initAlarms();
 eventsObj.selectUpcomingEvent();
 
@@ -21,6 +22,6 @@ clockFace.redrawAll();
 clockInterval.setTickHandler(() => {
     clockFace.redrawAll();
 });
-clockInterval.useMinuteInterval();
+clockInterval.useSecondInterval();
 
 setupBangleEvents(clockFace, clockInterval, eventsObj);
