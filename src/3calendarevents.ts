@@ -188,8 +188,8 @@ class CalendarEvents {
                 updated++;
             }
         }
-        this.sortEvents();
         this.dedupEvents();
+        this.sortEvents();
         this.selectUpcomingEvent();
         this.initAlarms();
 
