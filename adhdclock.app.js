@@ -675,7 +675,21 @@ class Meter {
 
 "use strict";
 
+const USE_SECONDS_DURATION = 1e3 * 30;
+
+var revertToMinutesTimer = null;
+
 function setupBangleEvents(clockFace, clockInterval, eventsObj) {
+    Bangle.on("twist", function() {
+        console.log("twist");
+        clockInterval.useSecondInterval();
+        if (!revertToMinutesTimer) {
+            revertToMinutesTimer = setInterval(function() {
+                clockInterval.useMinuteInterval();
+                revertToMinutesTimer = null;
+            }, USE_SECONDS_DURATION);
+        }
+    });
     Bangle.on("swipe", function(directionLR, directionUD) {
         if (directionLR == -1 && directionUD == 0) {
             eventsObj.selectNextEvent();
@@ -834,6 +848,8 @@ var clockFace = new ClockFace(clockInterval, eventsObj);
 
 eventsObj.setClockFace(clockFace);
 
+eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-09-15", "10:55pm"), new MyDate("2022-09-15", "11:00pm")));
+
 eventsObj.initAlarms();
 
 eventsObj.selectUpcomingEvent();
@@ -850,6 +866,6 @@ clockInterval.setTickHandler(() => {
     clockFace.redrawAll();
 });
 
-clockInterval.useSecondInterval();
+clockInterval.useMinuteInterval();
 
 setupBangleEvents(clockFace, clockInterval, eventsObj);

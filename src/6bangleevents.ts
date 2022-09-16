@@ -1,5 +1,18 @@
+const USE_SECONDS_DURATION = 1000 * 30;
+
+var revertToMinutesTimer = null as any;
 
 function setupBangleEvents(clockFace: ClockFace, clockInterval: ClockInterval, eventsObj: CalendarEvents) {
+    Bangle.on('twist', function() {
+        console.log("twist");
+        clockInterval.useSecondInterval();
+        if(!revertToMinutesTimer) {
+            revertToMinutesTimer = setInterval(function() {
+                clockInterval.useMinuteInterval();
+                revertToMinutesTimer = null;
+            }, USE_SECONDS_DURATION);
+        }
+    });
 
     Bangle.on('swipe', function(directionLR, directionUD) {
         if(directionLR == -1 && directionUD == 0) {
