@@ -681,14 +681,15 @@ var revertToMinutesTimer = null;
 
 function setupBangleEvents(clockFace, clockInterval, eventsObj) {
     Bangle.on("twist", function() {
-        console.log("twist");
         clockInterval.useSecondInterval();
-        if (!revertToMinutesTimer) {
-            revertToMinutesTimer = setInterval(function() {
-                clockInterval.useMinuteInterval();
-                revertToMinutesTimer = null;
-            }, USE_SECONDS_DURATION);
+        if (revertToMinutesTimer) {
+            clearTimeout(revertToMinutesTimer);
+            revertToMinutesTimer = null;
         }
+        revertToMinutesTimer = setInterval(function() {
+            clockInterval.useMinuteInterval();
+            revertToMinutesTimer = null;
+        }, USE_SECONDS_DURATION);
     });
     Bangle.on("swipe", function(directionLR, directionUD) {
         if (directionLR == -1 && directionUD == 0) {
