@@ -23,6 +23,7 @@ class Alarm {
     public cancel() {
         if(this.timeout) {
             clearTimeout(this.timeout);
+            this.timeout = undefined;
         }
     }
 
@@ -39,6 +40,7 @@ class AlarmManager {
     }
 
     public addAlarm(id: string, date: Date, callback: Function): Alarm {
+        // console.log(`adding alarm ${id}`);
         if(this.alarms[id]) {
             this.alarms[id].cancel();
         }

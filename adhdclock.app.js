@@ -99,6 +99,7 @@ class Alarm {
     cancel() {
         if (this.timeout) {
             clearTimeout(this.timeout);
+            this.timeout = undefined;
         }
     }
     toString() {
@@ -369,6 +370,7 @@ class CalendarEvents {
             }
         }
         this.sortEvents();
+        this.dedupEvents();
         this.selectUpcomingEvent();
         this.initAlarms();
         return updated;
@@ -390,6 +392,18 @@ class CalendarEvents {
         this.events = this.events.sort((e1, e2) => {
             return e1.endTime.unixTimestampMillis() - e2.endTime.unixTimestampMillis();
         });
+    }
+    dedupEvents() {
+        for (var i = 0; i < this.events.length; i++) {
+            var e = this.events[i];
+            for (var j = i + 1; j < this.events.length; j++) {
+                var e2 = this.events[j];
+                if (e.name == e2.name && e.startTime.date.getTime() == e2.startTime.date.getTime() && e.endTime.date.getTime() == e2.endTime.date.getTime()) {
+                    this.events.splice(j, 1);
+                    j--;
+                }
+            }
+        }
     }
     initAlarms() {
         for (var i = 0; i < this.events.length; i++) {

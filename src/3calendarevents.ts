@@ -189,6 +189,7 @@ class CalendarEvents {
             }
         }
         this.sortEvents();
+        this.dedupEvents();
         this.selectUpcomingEvent();
         this.initAlarms();
 
@@ -211,6 +212,19 @@ class CalendarEvents {
         this.events = this.events.sort((e1, e2) => {
             return e1.endTime.unixTimestampMillis() - e2.endTime.unixTimestampMillis();
         });
+    }
+
+    public dedupEvents() {
+        for(var i = 0; i < this.events.length; i++) {
+            var e = this.events[i];
+            for(var j = i+1; j < this.events.length; j++) {
+                var e2 = this.events[j];
+                if(e.name == e2.name && e.startTime.date.getTime() == e2.startTime.date.getTime() && e.endTime.date.getTime() == e2.endTime.date.getTime()) {
+                    this.events.splice(j, 1);
+                    j--;
+                }
+            }
+        }
     }
 
     public initAlarms() {
