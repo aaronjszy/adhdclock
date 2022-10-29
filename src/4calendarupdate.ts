@@ -11,29 +11,14 @@ class CalendarUpdater {
     public forceCalendarUpdate() {
         var cal = require("Storage").readJSON("android.calendar.json", true)||[];
         if(NRF.getSecurityStatus().connected) {
-            E.showPrompt("Do you want to also clear the internal database first?", {
-                buttons: {"Yes": 1, "No": 2, "Cancel": 3}
-            }).then((v)=>{
-                switch(v) {
-                    case 1:
-                        require("Storage").writeJSON("android.calendar.json", []);
-                        cal = [];
-                    case 2:
-                        this.gbSend(JSON.stringify({t:"force_calendar_sync", ids: cal.map((e: any)=>e.id)}));
-                        E.showAlert("Request sent to the phone").then(()=>{
-                            this.readCalendarDataAndUpdate();
-                            this.clockFace.redrawAll();
-                        });
-                        break;
-                    case 3:
-                    default:
-                        this.readCalendarDataAndUpdate();
-                        this.clockFace.redrawAll();
-                        return;
-                }
+            this.gbSend(JSON.stringify({t:"force_calendar_sync", ids: cal.map((e: any)=>e.id)}));
+            E.showAlert("Request sent to the phone").then(()=>{
+                this.clockFace.redrawAll();
             });
         } else {
-            E.showAlert("You are not connected").then(()=>{this.clockFace.redrawAll()});
+            E.showAlert("You are not connected").then(()=>{
+                this.clockFace.redrawAll()
+            });
         }
     }
 

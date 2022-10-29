@@ -22,6 +22,14 @@ class MyDate {
         }
     }
 
+    floorMinutes() {
+        this.date.setMinutes(0, 0, 0);
+    }
+
+    addMinutes(minutes: number) {
+        this.date = new Date(this.date.getTime() + minutes*60000);
+    }
+    
     valueOf(): Date {
         return this.date;
     }
@@ -73,10 +81,6 @@ class MyDate {
         if(hoursToEventAbs == 0) {
             return `${sign}${minutesToEventAbs}`
         } else {
-            // if(showSeconds) {
-            //     var secondsDisplay = zeroPad(Math.floor(secondsUntilAbs % 60));
-            //     return `${sign}${hoursToEventAbs}:${zeroPad(minutesToEventAbs)}:${secondsDisplay}`
-            // }
             return `${sign}${hoursToEventAbs}:${zeroPad(minutesToEventAbs)}`
         }
     }

@@ -5,9 +5,8 @@ enum TrackedEventBoundary {
 }
 
 class CalendarEvent {
-    alarmHandler: ((clockFace: ClockFace, event: CalendarEvent) => void);
+    alarmHandler: ((event: CalendarEvent) => void);
     id: string;
-    clockFace: ClockFace;
     name: string;
     description: string;
     startTime: MyDate;
@@ -16,10 +15,9 @@ class CalendarEvent {
     bangleCalendarEventId: number | undefined;
     trackedEventBoundary: TrackedEventBoundary;
 
-    constructor(clockFace: ClockFace, name: string, description: string, startTime: MyDate, endTime: MyDate) {
+    constructor(name: string, description: string, startTime: MyDate, endTime: MyDate) {
         this.alarmHandler = () => {};
         this.id = `${name}/${new Date().getTime().toString()}`;
-        this.clockFace = clockFace;
         this.name = name;
         this.description = description;
         this.startTime = startTime;
@@ -29,7 +27,16 @@ class CalendarEvent {
         this.trackedEventBoundary = TrackedEventBoundary.END;
     }
 
-    public setAlarmHandler(alarmHandler: (clockFace: ClockFace, event: CalendarEvent) => void) {
+    public static fromJSON(json: any): CalendarEvent {
+        var e = new CalendarEvent(json.name, json.description, new MyDate(json.startTime.date), new MyDate(json.endTime.date))
+        e.id = json.id
+        e.skipped = json.skipped
+        e.bangleCalendarEventId = json.bangleCalendarEventId
+        e.trackedEventBoundary = json.trackedEventBoundary
+        return e
+    }
+
+    public setAlarmHandler(alarmHandler: (event: CalendarEvent) => void) {
         this.alarmHandler = alarmHandler;
     }
 
@@ -41,7 +48,6 @@ class CalendarEvent {
 
         // set equivalent event properties for fields we dont want included in the isModified check
         event.id = this.id;
-        event.clockFace = this.clockFace;
         event.bangleCalendarEventId = this.bangleCalendarEventId;
         event.skipped = this.skipped;
         event.trackedEventBoundary = this.trackedEventBoundary;
@@ -86,19 +92,6 @@ class CalendarEvent {
         return this.endTime;
     }
 
-    initAlarms(alarmManager: AlarmManager) {
-        alarmManager.addAlarm(this.id+"/start", this.startTime.date, () => {
-            if(!this.skipped && this.startTime.millisUntil() > 0) {
-                this.alarmHandler(this.clockFace, this);
-            }
-        });
-        alarmManager.addAlarm(this.id+"/end", this.endTime.date, () => {
-            if(!this.skipped && this.endTime.millisUntil() > 0) {
-                this.alarmHandler(this.clockFace, this);
-            }
-        });
-    }
-
     displayName(): string {
         return this.name.substr(0, 14);
     }
@@ -126,43 +119,42 @@ class CalendarEvent {
         var durationMillis = this.endTime.unixTimestampMillis() - this.startTime.unixTimestampMillis()
         return durationMillis / 1000 / 60;
     }
+
+    isExpired(): boolean{
+        return false;
+    }
 }
 
 class CalendarEvents {
-    clockFace: ClockFace;
     selectedEvent: number;
     events: CalendarEvent[];
     refocusTimeout: NodeJS.Timeout | undefined;
-    alarmManager: AlarmManager;
 
-    constructor(events: CalendarEvent[], alarmManager: AlarmManager) {
-        // TODO this is gross, we dont use this but i need to add it to satisfy typescript
-        this.clockFace = new ClockFace(new ClockInterval(), this);
-
+    constructor(events: CalendarEvent[]) {
         this.selectedEvent = 0;
         this.events = events;
-        this.alarmManager = alarmManager;
         this.refocusTimeout = undefined;
     }
 
-    public setClockFace(clockFace: ClockFace) {
-        this.clockFace = clockFace;
+    public save() {
+        var file = require("Storage").open("adhdclock.events","w");
+        file.write(JSON.stringify(this));
     }
 
-    public eventAlarmHandler(event: CalendarEvent) {
-        this.selectEvent(event);
-        this.clockFace.redrawAll();
-
-        Bangle.setLCDPower(1);
-        Bangle.buzz(1000).then(() => {
-            return new Promise(resolve => setTimeout(resolve, 500));
-        }).then(()=>{
-            return Bangle.buzz(1000);
-        }).then(() => {
-            return new Promise(resolve => setTimeout(resolve, 500));
-        }).then(()=>{
-            return Bangle.buzz(1000);
-        });
+    public restore(): CalendarEvents {
+        var file = require("Storage").open("adhdclock.events","r");
+        if(file) {
+            var data = file.read(file.getLength());
+            if(data) {
+                var restoredObject = JSON.parse(data);
+                this.selectedEvent = restoredObject.selectedEvent;
+                this.events = []
+                for(var i = 0; i < restoredObject.events.length; i++) {
+                    this.events[i] = CalendarEvent.fromJSON(restoredObject.events[i]);
+                }
+            }
+        }
+        return this
     }
 
     public updateFromCalendar(calendar: any) {
@@ -177,12 +169,11 @@ class CalendarEvents {
             if (calEndEventTimeMillis > (now.getTime()+maxEventTimeOffset) || calEndEventTimeMillis < (now.getTime()-maxEventTimeOffset)) {
                 continue;
             }
-            if(calendarEvent.title == "" || calendarEvent.t != "calendar" || calendarEvent.allDay || calendarEvent.durationInSeconds == 86400 || calendarEvent.type != 0) {
+            if(!calendarEvent.title || calendarEvent.title == "" || calendarEvent.t != "calendar" || calendarEvent.allDay || calendarEvent.durationInSeconds == 86400 || calendarEvent.type != 0) {
                 continue;
             }
 
-            var newEvent = new CalendarEvent(this.clockFace, calendarEvent.title, calendarEvent.description, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
-            newEvent.setAlarmHandler(() => {this.eventAlarmHandler(newEvent)});
+            var newEvent = new CalendarEvent(calendarEvent.title, calendarEvent.description, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
             newEvent.setBangleCalendarEventId(calendarEvent.id);
             if(this.addEvent(newEvent)) {
                 updated++;
@@ -191,13 +182,11 @@ class CalendarEvents {
         this.dedupEvents();
         this.sortEvents();
         this.selectUpcomingEvent();
-        this.initAlarms();
 
         return updated;
     }
 
     public addEvent(event: CalendarEvent): boolean {
-        event.setAlarmHandler(()=>{this.eventAlarmHandler(event)});
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             if(e.bangleCalendarEventId == event.bangleCalendarEventId) {
@@ -227,12 +216,16 @@ class CalendarEvents {
         }
     }
 
-    public initAlarms() {
-        for(var i = 0; i < this.events.length; i++) {
-            var e = this.events[i];
-            e.initAlarms(this.alarmManager);
-        }
-    }
+    // // TODO implement a function to drop past events
+    // public removeOldEvents() {
+    //     var futureEvents: CalendarEvent[];
+    //     for(var i = 0; i < this.events.length; i++) {
+    //         if(!this.events[i].isExpired()) {
+    //             futureEvents.append(this.events[i]);
+    //         }
+    //     }
+    //     this.events = futureEvents;
+    // }
 
     public selectEvent(event: CalendarEvent) {
         for(var i = 0; i < this.events.length; i++) {
@@ -282,7 +275,11 @@ class CalendarEvents {
     }
 
     public getSelectedEvent() {
-        return this.events[this.selectedEvent];
+        if(this.events.length > 0) {
+            return this.events[this.selectedEvent];
+        } else {
+            return new CalendarEvent("No events", "", new MyDate(), new MyDate());
+        }
     }
 
     public setRefocusTimeout() {
@@ -290,7 +287,8 @@ class CalendarEvents {
         this.refocusTimeout = setTimeout(()=>{
             var e = this.selectUpcomingEvent();
             this.clearRefocusTimeout();
-            this.clockFace.redrawAll();
+            // TODO: find another way to do this
+            // this.clockFace.redrawAll();
         }, 5000);
     }
 
@@ -299,5 +297,9 @@ class CalendarEvents {
             clearTimeout(this.refocusTimeout);
         }
         this.refocusTimeout = undefined;
+    }
+
+    public hasEvents() {
+        return this.events.length > 0
     }
 }

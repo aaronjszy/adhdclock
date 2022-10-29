@@ -3,19 +3,23 @@ const USE_SECONDS_DURATION = 1000 * 30;
 var revertToMinutesTimer = null as any;
 
 function setupBangleEvents(clockFace: ClockFace, clockInterval: ClockInterval, eventsObj: CalendarEvents) {
-    Bangle.on('twist', function() {
-        clockInterval.useSecondInterval();
+    // Bangle.on('twist', function() {
+    //     clockInterval.useSecondInterval();
+    //     if(revertToMinutesTimer) {
+    //         clearTimeout(revertToMinutesTimer);
+    //         revertToMinutesTimer = null;
+    //     }
+    //     revertToMinutesTimer = setInterval(function() {
+    //         clockInterval.useMinuteInterval();
+    //         revertToMinutesTimer = null;
+    //     }, USE_SECONDS_DURATION);
+    // });
 
-        if(revertToMinutesTimer) {
-            clearTimeout(revertToMinutesTimer);
-            revertToMinutesTimer = null;
-        }
-
-        revertToMinutesTimer = setInterval(function() {
-            clockInterval.useMinuteInterval();
-            revertToMinutesTimer = null;
-        }, USE_SECONDS_DURATION);
-    });
+    // When button is pressed save state and open the launcher
+    setWatch(() => {
+        eventsObj.save();
+        Bangle.showLauncher();
+    }, BTN1, {repeat:false,edge:"falling"});
 
     Bangle.on('swipe', function(directionLR, directionUD) {
         if(directionLR == -1 && directionUD == 0) {
@@ -80,4 +84,17 @@ function setupBangleEvents(clockFace: ClockFace, clockInterval: ClockInterval, e
             clockFace.redrawAll(); // draw immediately
         }
     });
+
+    (function() {
+        var _GB = global.GB;
+        global.GB = function(j: any) {
+          switch (j.t) {
+            case "calendar":
+              console.log(j.id + ": " + j.title);
+              Terminal.println(j.id + ": " + j.title);
+              break;
+          }
+          if (_GB)_GB(j);
+        };
+      })();
 }

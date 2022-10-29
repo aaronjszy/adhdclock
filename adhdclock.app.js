@@ -82,53 +82,6 @@ function parseICal(data) {
 
 "use strict";
 
-class Alarm {
-    constructor(id, date, callback) {
-        this.id = id;
-        this.date = date;
-        this.callback = callback;
-        this.timeout = undefined;
-    }
-    setup() {
-        this.cancel();
-        this.timeout = setTimeout(() => {
-            this.callback();
-        }, this.date.getTime() - new Date().getTime());
-        return this;
-    }
-    cancel() {
-        if (this.timeout) {
-            clearTimeout(this.timeout);
-            this.timeout = undefined;
-        }
-    }
-    toString() {
-        return `${this.id} '${this.date}'`;
-    }
-}
-
-class AlarmManager {
-    constructor() {
-        this.alarms = {};
-    }
-    addAlarm(id, date, callback) {
-        if (this.alarms[id]) {
-            this.alarms[id].cancel();
-        }
-        this.alarms[id] = new Alarm(id, date, callback).setup();
-        return this.alarms[id];
-    }
-    toString() {
-        var s = "";
-        for (var id in this.alarms) {
-            s += this.alarms[id].toString() + "\n";
-        }
-        return s;
-    }
-}
-
-"use strict";
-
 function fillLine(x1, y1, x2, y2, lineWidth) {
     var dx, dy, d;
     lineWidth = (lineWidth - 1) / 2;
@@ -167,6 +120,12 @@ class MyDate {
         } else {
             this.date = dateStr ? new Date(dateStr) : new Date();
         }
+    }
+    floorMinutes() {
+        this.date.setMinutes(0, 0, 0);
+    }
+    addMinutes(minutes) {
+        this.date = new Date(this.date.getTime() + minutes * 6e4);
     }
     valueOf() {
         return this.date;
@@ -234,10 +193,9 @@ var TrackedEventBoundary;
 })(TrackedEventBoundary || (TrackedEventBoundary = {}));
 
 class CalendarEvent {
-    constructor(clockFace, name, description, startTime, endTime) {
+    constructor(name, description, startTime, endTime) {
         this.alarmHandler = () => {};
         this.id = `${name}/${new Date().getTime().toString()}`;
-        this.clockFace = clockFace;
         this.name = name;
         this.description = description;
         this.startTime = startTime;
@@ -245,6 +203,14 @@ class CalendarEvent {
         this.skipped = false;
         this.bangleCalendarEventId = undefined;
         this.trackedEventBoundary = TrackedEventBoundary.END;
+    }
+    static fromJSON(json) {
+        var e = new CalendarEvent(json.name, json.description, new MyDate(json.startTime.date), new MyDate(json.endTime.date));
+        e.id = json.id;
+        e.skipped = json.skipped;
+        e.bangleCalendarEventId = json.bangleCalendarEventId;
+        e.trackedEventBoundary = json.trackedEventBoundary;
+        return e;
     }
     setAlarmHandler(alarmHandler) {
         this.alarmHandler = alarmHandler;
@@ -254,7 +220,6 @@ class CalendarEvent {
             return false;
         }
         event.id = this.id;
-        event.clockFace = this.clockFace;
         event.bangleCalendarEventId = this.bangleCalendarEventId;
         event.skipped = this.skipped;
         event.trackedEventBoundary = this.trackedEventBoundary;
@@ -285,18 +250,6 @@ class CalendarEvent {
         }
         return this.endTime;
     }
-    initAlarms(alarmManager) {
-        alarmManager.addAlarm(this.id + "/start", this.startTime.date, () => {
-            if (!this.skipped && this.startTime.millisUntil() > 0) {
-                this.alarmHandler(this.clockFace, this);
-            }
-        });
-        alarmManager.addAlarm(this.id + "/end", this.endTime.date, () => {
-            if (!this.skipped && this.endTime.millisUntil() > 0) {
-                this.alarmHandler(this.clockFace, this);
-            }
-        });
-    }
     displayName() {
         return this.name.substr(0, 14);
     }
@@ -319,32 +272,35 @@ class CalendarEvent {
         var durationMillis = this.endTime.unixTimestampMillis() - this.startTime.unixTimestampMillis();
         return durationMillis / 1e3 / 60;
     }
+    isExpired() {
+        return false;
+    }
 }
 
 class CalendarEvents {
-    constructor(events, alarmManager) {
-        this.clockFace = new ClockFace(new ClockInterval(), this);
+    constructor(events) {
         this.selectedEvent = 0;
         this.events = events;
-        this.alarmManager = alarmManager;
         this.refocusTimeout = undefined;
     }
-    setClockFace(clockFace) {
-        this.clockFace = clockFace;
+    save() {
+        var file = require("Storage").open("adhdclock.events", "w");
+        file.write(JSON.stringify(this));
     }
-    eventAlarmHandler(event) {
-        this.selectEvent(event);
-        this.clockFace.redrawAll();
-        Bangle.setLCDPower(1);
-        Bangle.buzz(1e3).then(() => {
-            return new Promise(resolve => setTimeout(resolve, 500));
-        }).then(() => {
-            return Bangle.buzz(1e3);
-        }).then(() => {
-            return new Promise(resolve => setTimeout(resolve, 500));
-        }).then(() => {
-            return Bangle.buzz(1e3);
-        });
+    restore() {
+        var file = require("Storage").open("adhdclock.events", "r");
+        if (file) {
+            var data = file.read(file.getLength());
+            if (data) {
+                var restoredObject = JSON.parse(data);
+                this.selectedEvent = restoredObject.selectedEvent;
+                this.events = [];
+                for (var i = 0; i < restoredObject.events.length; i++) {
+                    this.events[i] = CalendarEvent.fromJSON(restoredObject.events[i]);
+                }
+            }
+        }
+        return this;
     }
     updateFromCalendar(calendar) {
         var updated = 0;
@@ -357,13 +313,10 @@ class CalendarEvents {
             if (calEndEventTimeMillis > now.getTime() + maxEventTimeOffset || calEndEventTimeMillis < now.getTime() - maxEventTimeOffset) {
                 continue;
             }
-            if (calendarEvent.title == "" || calendarEvent.t != "calendar" || calendarEvent.allDay || calendarEvent.durationInSeconds == 86400 || calendarEvent.type != 0) {
+            if (!calendarEvent.title || calendarEvent.title == "" || calendarEvent.t != "calendar" || calendarEvent.allDay || calendarEvent.durationInSeconds == 86400 || calendarEvent.type != 0) {
                 continue;
             }
-            var newEvent = new CalendarEvent(this.clockFace, calendarEvent.title, calendarEvent.description, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
-            newEvent.setAlarmHandler(() => {
-                this.eventAlarmHandler(newEvent);
-            });
+            var newEvent = new CalendarEvent(calendarEvent.title, calendarEvent.description, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
             newEvent.setBangleCalendarEventId(calendarEvent.id);
             if (this.addEvent(newEvent)) {
                 updated++;
@@ -372,13 +325,9 @@ class CalendarEvents {
         this.dedupEvents();
         this.sortEvents();
         this.selectUpcomingEvent();
-        this.initAlarms();
         return updated;
     }
     addEvent(event) {
-        event.setAlarmHandler(() => {
-            this.eventAlarmHandler(event);
-        });
         for (var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             if (e.bangleCalendarEventId == event.bangleCalendarEventId) {
@@ -403,12 +352,6 @@ class CalendarEvents {
                     j--;
                 }
             }
-        }
-    }
-    initAlarms() {
-        for (var i = 0; i < this.events.length; i++) {
-            var e = this.events[i];
-            e.initAlarms(this.alarmManager);
         }
     }
     selectEvent(event) {
@@ -453,14 +396,17 @@ class CalendarEvents {
         return this.getSelectedEvent();
     }
     getSelectedEvent() {
-        return this.events[this.selectedEvent];
+        if (this.events.length > 0) {
+            return this.events[this.selectedEvent];
+        } else {
+            return new CalendarEvent("No events", "", new MyDate(), new MyDate());
+        }
     }
     setRefocusTimeout() {
         this.clearRefocusTimeout();
         this.refocusTimeout = setTimeout(() => {
             var e = this.selectUpcomingEvent();
             this.clearRefocusTimeout();
-            this.clockFace.redrawAll();
         }, 5e3);
     }
     clearRefocusTimeout() {
@@ -468,6 +414,9 @@ class CalendarEvents {
             clearTimeout(this.refocusTimeout);
         }
         this.refocusTimeout = undefined;
+    }
+    hasEvents() {
+        return this.events.length > 0;
     }
 }
 
@@ -481,35 +430,12 @@ class CalendarUpdater {
     forceCalendarUpdate() {
         var cal = require("Storage").readJSON("android.calendar.json", true) || [];
         if (NRF.getSecurityStatus().connected) {
-            E.showPrompt("Do you want to also clear the internal database first?", {
-                buttons: {
-                    Yes: 1,
-                    No: 2,
-                    Cancel: 3
-                }
-            }).then(v => {
-                switch (v) {
-                  case 1:
-                    require("Storage").writeJSON("android.calendar.json", []);
-                    cal = [];
-
-                  case 2:
-                    this.gbSend(JSON.stringify({
-                        t: "force_calendar_sync",
-                        ids: cal.map(e => e.id)
-                    }));
-                    E.showAlert("Request sent to the phone").then(() => {
-                        this.readCalendarDataAndUpdate();
-                        this.clockFace.redrawAll();
-                    });
-                    break;
-
-                  case 3:
-                  default:
-                    this.readCalendarDataAndUpdate();
-                    this.clockFace.redrawAll();
-                    return;
-                }
+            this.gbSend(JSON.stringify({
+                t: "force_calendar_sync",
+                ids: cal.map(e => e.id)
+            }));
+            E.showAlert("Request sent to the phone").then(() => {
+                this.clockFace.redrawAll();
             });
         } else {
             E.showAlert("You are not connected").then(() => {
@@ -544,11 +470,11 @@ class CalendarUpdater {
 "use strict";
 
 class ClockFace {
-    constructor(clockInterval, eventsObj) {
-        this.clockInterval = clockInterval;
+    constructor(eventsObj) {
         this.eventsObj = eventsObj;
     }
     redrawAll() {
+        g.reset();
         g.clearRect({
             x: 0,
             y: 24,
@@ -560,11 +486,6 @@ class ClockFace {
     draw() {
         var now = new MyDate();
         var e = this.eventsObj.getSelectedEvent();
-        if (!e) {
-            E.showMessage("No events.");
-            return;
-        }
-        var showSeconds = Math.abs(e.getTrackedEventDate().minutesUntil()) <= 11;
         var X = 176 * .5;
         var Y = 176 * .75;
         g.reset();
@@ -575,11 +496,6 @@ class ClockFace {
         var timeRemaining = e.displayTimeRemaining();
         var strMetrics = g.stringMetrics(timeRemaining);
         g.drawString(timeRemaining, X, Y, false);
-        if (showSeconds) {
-            g.setFont("Vector", 22);
-            g.setFontAlign(-1, 1);
-            g.drawString(e.displaySecondsRemaining(), X + strMetrics.width / 2 + 3, Y - 4, false);
-        }
         var leftTime = now.formattedTime();
         var rightTime = e.getTrackedEventDate().formattedTime();
         var midTime = e.startTime.formattedTime() + "/";
@@ -694,16 +610,12 @@ const USE_SECONDS_DURATION = 1e3 * 30;
 var revertToMinutesTimer = null;
 
 function setupBangleEvents(clockFace, clockInterval, eventsObj) {
-    Bangle.on("twist", function() {
-        clockInterval.useSecondInterval();
-        if (revertToMinutesTimer) {
-            clearTimeout(revertToMinutesTimer);
-            revertToMinutesTimer = null;
-        }
-        revertToMinutesTimer = setInterval(function() {
-            clockInterval.useMinuteInterval();
-            revertToMinutesTimer = null;
-        }, USE_SECONDS_DURATION);
+    setWatch(() => {
+        eventsObj.save();
+        Bangle.showLauncher();
+    }, BTN1, {
+        repeat: false,
+        edge: "falling"
     });
     Bangle.on("swipe", function(directionLR, directionUD) {
         if (directionLR == -1 && directionUD == 0) {
@@ -758,6 +670,18 @@ function setupBangleEvents(clockFace, clockInterval, eventsObj) {
             clockFace.redrawAll();
         }
     });
+    (function() {
+        var _GB = global.GB;
+        global.GB = function(j) {
+            switch (j.t) {
+              case "calendar":
+                console.log(j.id + ": " + j.title);
+                Terminal.println(j.id + ": " + j.title);
+                break;
+            }
+            if (_GB) _GB(j);
+        };
+    })();
 }
 
 "use strict";
@@ -853,29 +777,33 @@ class ClockInterval {
 
 require("Font7x11Numeric7Seg").add(Graphics);
 
-var alarmManager = new AlarmManager();
+var eventsObj = new CalendarEvents([]).restore();
 
-var clockInterval = new ClockInterval();
+var clockFace = new ClockFace(eventsObj);
 
-var eventsObj = new CalendarEvents([], alarmManager);
+var now = new MyDate();
 
-var clockFace = new ClockFace(clockInterval, eventsObj);
+now.addMinutes(60);
 
-eventsObj.setClockFace(clockFace);
-
-eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-09-15", "10:55pm"), new MyDate("2022-09-15", "11:00pm")));
-
-eventsObj.initAlarms();
-
-eventsObj.selectUpcomingEvent();
+now.floorMinutes();
 
 new CalendarUpdater(clockFace, eventsObj).readCalendarDataAndUpdate();
+
+if (!eventsObj.hasEvents()) {
+    eventsObj.addEvent(new CalendarEvent("next hour", "", now, now));
+}
+
+eventsObj.selectUpcomingEvent();
 
 Bangle.setUI("clock");
 
 Bangle.loadWidgets();
 
+Bangle.drawWidgets();
+
 clockFace.redrawAll();
+
+var clockInterval = new ClockInterval();
 
 clockInterval.setTickHandler(() => {
     clockFace.redrawAll();

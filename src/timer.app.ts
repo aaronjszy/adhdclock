@@ -1,23 +1,26 @@
 require("Font7x11Numeric7Seg").add(Graphics);
 
-// BUG: alarms dont work reliably and i dont know why
+var eventsObj = new CalendarEvents([]).restore();
+var clockFace = new ClockFace(eventsObj);
 
-var alarmManager = new AlarmManager();
-var clockInterval = new ClockInterval();
-var eventsObj = new CalendarEvents([], alarmManager);
-
-var clockFace = new ClockFace(clockInterval, eventsObj);
-eventsObj.setClockFace(clockFace);
-eventsObj.addEvent(new CalendarEvent(clockFace, "test1", "testdesc", new MyDate("2022-09-15", "10:55pm"), new MyDate("2022-09-15", "11:00pm")));
-eventsObj.initAlarms();
-eventsObj.selectUpcomingEvent();
+var now = new MyDate();
+now.addMinutes(60);
+now.floorMinutes();
 
 (new CalendarUpdater(clockFace, eventsObj)).readCalendarDataAndUpdate();
 
+if(!eventsObj.hasEvents()) {
+    eventsObj.addEvent(new CalendarEvent("next hour", "", now, now));
+}
+
+eventsObj.selectUpcomingEvent();
+
 Bangle.setUI("clock");
 Bangle.loadWidgets();
+Bangle.drawWidgets();
 clockFace.redrawAll();
 
+var clockInterval = new ClockInterval();
 clockInterval.setTickHandler(() => {
     clockFace.redrawAll();
 
@@ -29,3 +32,6 @@ clockInterval.setTickHandler(() => {
 clockInterval.useMinuteInterval();
 
 setupBangleEvents(clockFace, clockInterval, eventsObj);
+ 
+// Put this in ide to send a test message
+// GB({"t": "calendar","id": 36,"type": 0,"timestamp": 1665892800,"durationInSeconds": 1800,"title": "Zzz","description": "","location": "","calName": "aaronszymanski@gmail.com/BangleJS","color": -4989844,"allDay": false})

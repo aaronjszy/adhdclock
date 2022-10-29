@@ -1,13 +1,12 @@
 class ClockFace {
-    private clockInterval: ClockInterval;
     private eventsObj: CalendarEvents;
 
-    constructor(clockInterval: ClockInterval, eventsObj: CalendarEvents) {
-        this.clockInterval = clockInterval;
+    constructor(eventsObj: CalendarEvents) {
         this.eventsObj = eventsObj;
     }
 
     public redrawAll() {
+        g.reset();
         g.clearRect({x: 0, y: 24, x2: g.getHeight(), y2: g.getWidth()});
         this.draw();
     }
@@ -15,12 +14,6 @@ class ClockFace {
     private draw() {
         var now = new MyDate();
         var e = this.eventsObj.getSelectedEvent();
-        if(!e) {
-            E.showMessage("No events.");
-            return;
-        }
-
-        var showSeconds = Math.abs(e.getTrackedEventDate().minutesUntil()) <= 11;
 
         var X = 176*0.5;
         var Y = 176*0.75;
@@ -38,11 +31,11 @@ class ClockFace {
         var strMetrics = g.stringMetrics(timeRemaining);
         g.drawString(timeRemaining, X, Y, false);
 
-        if(showSeconds) {
-            g.setFont("Vector", 22);
-            g.setFontAlign(-1,1);
-            g.drawString(e.displaySecondsRemaining(), X+(strMetrics.width/2)+3, Y-4, false);
-        }
+        // if(showSeconds) {
+        //     g.setFont("Vector", 22);
+        //     g.setFontAlign(-1,1);
+        //     g.drawString(e.displaySecondsRemaining(), X+(strMetrics.width/2)+3, Y-4, false);
+        // }
 
         var leftTime = now.formattedTime();
         var rightTime = e.getTrackedEventDate().formattedTime();
