@@ -1,4 +1,5 @@
-cd /Users/aarons/repos/adhdclock
+source $(dirname $0)/lib.sh
+gotoprojectroot
 
 rm -rf dist
 tsc

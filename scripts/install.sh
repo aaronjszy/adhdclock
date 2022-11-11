@@ -1,16 +1,9 @@
-cd /Users/aarons/repos/adhdclock
-
-prefix() {
-    awk '{ print "    ", $0 }'
-}
+source $(dirname $0)/lib.sh
 
 echo "--Build---------------------------"
-./scripts/build.sh 2>&1 | prefix
+build 2>&1 | prefix
 
 echo "--Install---------------------------"
-until espruino -d "Bangle.js cd9f" adhdclock.app.js; do
-    echo "Retrying..."
-    sleep 1
-done
+upload "adhdclock.app.js" | prefix
 
 echo "--Done---------------------------"
