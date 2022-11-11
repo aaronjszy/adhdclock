@@ -1,3 +1,5 @@
+cd /Users/aarons/repos/adhdclock
+
 rm -rf dist
 tsc
 rm -rf dist/0bangle.js

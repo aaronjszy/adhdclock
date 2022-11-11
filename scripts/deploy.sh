@@ -1,9 +1,11 @@
+cd /Users/aarons/repos/adhdclock
+
 prefix() {
     awk '{ print "    ", $0 }'
 }
 
 echo "--Build---------------------------"
-./build.sh 2>&1 | prefix
+./scripts/build.sh 2>&1 | prefix
 
 echo "--Copy to app loader--------------"
 cp adhdclock.app.js ~/repos/BangleApps/apps/adhdclock/app.js 2>&1 | prefix
