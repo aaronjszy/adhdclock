@@ -11,7 +11,7 @@ class CalendarUpdater {
     public forceCalendarUpdate() {
         var cal = require("Storage").readJSON("android.calendar.json", true)||[];
         if(NRF.getSecurityStatus().connected) {
-            this.gbSend(JSON.stringify({t:"force_calendar_sync", ids: cal.map((e: any)=>e.id)}));
+            this.gbSend(JSON.stringify({t:"force_calendar_sync", ids: []}));
             E.showAlert("Request sent to the phone").then(()=>{
                 this.clockFace.redrawAll();
             });
@@ -28,6 +28,8 @@ class CalendarUpdater {
     }
     
     public readCalendarDataAndUpdate() {
+        this.events.removeExpiredEvents();
+
         var calendarJSON = require("Storage").readJSON("android.calendar.json",true);
         if(!calendarJSON) {
             E.showAlert("No calendar data found.").then(() => {
@@ -38,6 +40,7 @@ class CalendarUpdater {
             return;
         } else {
             var updateCount = this.events.updateFromCalendar(calendarJSON);
+
             E.showAlert("Got calendar data. Updated "+updateCount+".").then(() => {
                 E.showAlert().then(() => {
                     this.clockFace.redrawAll();

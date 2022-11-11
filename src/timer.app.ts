@@ -7,7 +7,9 @@ var now = new MyDate();
 now.addMinutes(60);
 now.floorMinutes();
 
-(new CalendarUpdater(clockFace, eventsObj)).readCalendarDataAndUpdate();
+setTimeout(function() {
+    (new CalendarUpdater(clockFace, eventsObj)).readCalendarDataAndUpdate();
+}, 10);
 
 if(!eventsObj.hasEvents()) {
     eventsObj.addEvent(new CalendarEvent("next hour", "", now, now));

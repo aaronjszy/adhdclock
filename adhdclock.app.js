@@ -302,6 +302,12 @@ class CalendarEvents {
         }
         return this;
     }
+    removeExpiredEvents() {
+        var twelveHoursAgo = new Date().getTime() - 12 * 60 * 60 * 1e3;
+        this.events = this.events.filter(e => {
+            return e.endTime.unixTimestampMillis() > twelveHoursAgo;
+        });
+    }
     updateFromCalendar(calendar) {
         var updated = 0;
         var now = new Date();
@@ -432,7 +438,7 @@ class CalendarUpdater {
         if (NRF.getSecurityStatus().connected) {
             this.gbSend(JSON.stringify({
                 t: "force_calendar_sync",
-                ids: cal.map(e => e.id)
+                ids: []
             }));
             E.showAlert("Request sent to the phone").then(() => {
                 this.clockFace.redrawAll();
@@ -448,6 +454,7 @@ class CalendarUpdater {
         Bluetooth.println(JSON.stringify(message));
     }
     readCalendarDataAndUpdate() {
+        this.events.removeExpiredEvents();
         var calendarJSON = require("Storage").readJSON("android.calendar.json", true);
         if (!calendarJSON) {
             E.showAlert("No calendar data found.").then(() => {
@@ -787,7 +794,9 @@ now.addMinutes(60);
 
 now.floorMinutes();
 
-new CalendarUpdater(clockFace, eventsObj).readCalendarDataAndUpdate();
+setTimeout(function() {
+    new CalendarUpdater(clockFace, eventsObj).readCalendarDataAndUpdate();
+}, 10);
 
 if (!eventsObj.hasEvents()) {
     eventsObj.addEvent(new CalendarEvent("next hour", "", now, now));

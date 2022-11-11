@@ -157,6 +157,13 @@ class CalendarEvents {
         return this
     }
 
+    public removeExpiredEvents() {
+        var twelveHoursAgo = new Date().getTime() - (12 * 60 * 60 * 1000);
+        this.events = this.events.filter((e) => {
+            return e.endTime.unixTimestampMillis() > twelveHoursAgo;
+        });
+    }
+
     public updateFromCalendar(calendar: any) {
         var updated = 0;
         var now = new Date();
