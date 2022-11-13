@@ -1,4 +1,4 @@
-import * as date from "./2date";
+import * as date from "./date";
 export enum TrackedEventBoundary {
     START,
     END,

@@ -1,7 +1,7 @@
-import { ClockFace } from './5clockface';
-import { CalendarUpdater } from './4calendarupdate';
-import { ClockInterval } from "./7clockinterval";
-import { CalendarEvents } from './3calendarevents';
+import { ClockFace } from './clockface';
+import { CalendarUpdater } from './calendarupdate';
+import { ClockInterval } from "./clockinterval";
+import { CalendarEvents } from './calendarevents';
 
 // const USE_SECONDS_DURATION = 1000 * 30;
 

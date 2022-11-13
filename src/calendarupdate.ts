@@ -1,5 +1,5 @@
-import { ClockFace } from './5clockface';
-import { CalendarEvents } from './3calendarevents';
+import { ClockFace } from './clockface';
+import { CalendarEvents } from './calendarevents';
 
 export class CalendarUpdater {
     clockFace: ClockFace;

@@ -1,4 +1,4 @@
-import { zeroPad } from "./1util";
+import { zeroPad } from "./util";
 export class MyDate {
     date: Date;
 

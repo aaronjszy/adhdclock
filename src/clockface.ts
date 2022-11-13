@@ -1,6 +1,6 @@
-import { fillLine } from "./1customlib";
-import { MyDate } from "./2date";
-import { CalendarEvents, CalendarEvent, TrackedEventBoundary } from './3calendarevents';
+import { fillLine } from "./customlib";
+import { MyDate } from "./date";
+import { CalendarEvents, CalendarEvent, TrackedEventBoundary } from './calendarevents';
 
 export class ClockFace {
     private eventsObj: CalendarEvents;

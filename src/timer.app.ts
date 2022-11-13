@@ -1,10 +1,10 @@
-import { ClockFace } from './5clockface';
-import { CalendarUpdater } from './4calendarupdate';
-import { MyDate } from "./2date";
-import { ClockInterval } from "./7clockinterval";
-import { CalendarEvents, CalendarEvent } from './3calendarevents';
+import { ClockFace } from './clockface';
+import { CalendarUpdater } from './calendarupdate';
+import { MyDate } from "./date";
+import { ClockInterval } from "./clockinterval";
+import { CalendarEvents, CalendarEvent } from './calendarevents';
 
-import { setupBangleEvents } from './6bangleevents';
+import { setupBangleEvents } from './bangleevents';
 
 require("Font7x11Numeric7Seg").add(Graphics);
 
