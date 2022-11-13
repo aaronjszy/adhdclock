@@ -1,8 +1,24 @@
 {
-    "compilerOptions": {
-      "outDir": "./dist",
-      "target": "es6",
-      "strict": true,
-    },
-    "include": ["./src/**/*"]
+  "compilerOptions": {
+    "outDir": "./dist",
+    "module": "commonjs",
+    "noImplicitAny": true,
+    "target": "es6",
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noLib": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "strict": true,
+    "typeRoots": ["./typescript/types"]
+  },
+  "include": ["./**/*"],
+  "exclude": [
+        "**/gpconv.d.ts",
+        "**/gpconv_bg.wasm.d.ts"
+    ]
 }

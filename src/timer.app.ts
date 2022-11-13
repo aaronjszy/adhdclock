@@ -1,3 +1,11 @@
+import { ClockFace } from './5clockface';
+import { CalendarUpdater } from './4calendarupdate';
+import { MyDate } from "./2date";
+import { ClockInterval } from "./7clockinterval";
+import { CalendarEvents, CalendarEvent } from './3calendarevents';
+
+import { setupBangleEvents } from './6bangleevents';
+
 require("Font7x11Numeric7Seg").add(Graphics);
 
 var eventsObj = new CalendarEvents([]).restore();

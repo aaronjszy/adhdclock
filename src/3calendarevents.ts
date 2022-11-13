@@ -1,23 +1,23 @@
-
-enum TrackedEventBoundary {
+import * as date from "./2date";
+export enum TrackedEventBoundary {
     START,
     END,
 }
 
-class CalendarEvent {
+export class CalendarEvent {
     alarmHandler: ((event: CalendarEvent) => void);
     id: string;
     name: string;
     description: string;
-    startTime: MyDate;
-    endTime: MyDate;
+    startTime: date.MyDate;
+    endTime: date.MyDate;
     skipped: boolean;
     bangleCalendarEventId: number | undefined;
     trackedEventBoundary: TrackedEventBoundary;
 
-    constructor(name: string, description: string, startTime: MyDate, endTime: MyDate) {
+    constructor(name: string, description: string, startTime: date.MyDate, endTime: date.MyDate) {
         this.alarmHandler = () => {};
-        this.id = `${name}/${new Date().getTime().toString()}`;
+        this.id = `${name}/${new Date().getTime().toString(10)}`;
         this.name = name;
         this.description = description;
         this.startTime = startTime;
@@ -28,7 +28,7 @@ class CalendarEvent {
     }
 
     public static fromJSON(json: any): CalendarEvent {
-        var e = new CalendarEvent(json.name, json.description, new MyDate(json.startTime.date), new MyDate(json.endTime.date))
+        var e = new CalendarEvent(json.name, json.description, new date.MyDate(json.startTime.date), new date.MyDate(json.endTime.date))
         e.id = json.id
         e.skipped = json.skipped
         e.bangleCalendarEventId = json.bangleCalendarEventId
@@ -53,7 +53,7 @@ class CalendarEvent {
         event.trackedEventBoundary = this.trackedEventBoundary;
         event.alarmHandler = this.alarmHandler;
 
-        var isModified = JSON.stringify(event) != JSON.stringify(this);
+        var isModified = JSON.stringify(event, undefined, undefined) != JSON.stringify(this, undefined, undefined);
 
         // Update the event properties from the provided matching event
         // Note that were not updating the event id
@@ -85,7 +85,7 @@ class CalendarEvent {
         return this.trackedEventBoundary;
     }
 
-    getTrackedEventDate(): MyDate {
+    getTrackedEventDate(): date.MyDate {
         if(this.trackedEventBoundary == TrackedEventBoundary.START) {
             return this.startTime;
         }
@@ -125,10 +125,10 @@ class CalendarEvent {
     }
 }
 
-class CalendarEvents {
+export class CalendarEvents {
     selectedEvent: number;
     events: CalendarEvent[];
-    refocusTimeout: NodeJS.Timeout | undefined;
+    refocusTimeout: any;
 
     constructor(events: CalendarEvent[]) {
         this.selectedEvent = 0;
@@ -138,7 +138,7 @@ class CalendarEvents {
 
     public save() {
         var file = require("Storage").open("adhdclock.events","w");
-        file.write(JSON.stringify(this));
+        file.write(JSON.stringify(this, undefined, undefined));
     }
 
     public restore(): CalendarEvents {
@@ -180,7 +180,7 @@ class CalendarEvents {
                 continue;
             }
 
-            var newEvent = new CalendarEvent(calendarEvent.title, calendarEvent.description, new MyDate(calStartEventTimeMillis), new MyDate(calEndEventTimeMillis));
+            var newEvent = new CalendarEvent(calendarEvent.title, calendarEvent.description, new date.MyDate(calStartEventTimeMillis), new date.MyDate(calEndEventTimeMillis));
             newEvent.setBangleCalendarEventId(calendarEvent.id);
             if(this.addEvent(newEvent)) {
                 updated++;
@@ -196,6 +196,9 @@ class CalendarEvents {
     public addEvent(event: CalendarEvent): boolean {
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
+            if(!e) {
+                continue;
+            }
             if(e.bangleCalendarEventId == event.bangleCalendarEventId) {
                 return e.update(event);
             }
@@ -213,8 +216,14 @@ class CalendarEvents {
     public dedupEvents() {
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
+            if(!e) {
+                continue;
+            }
             for(var j = i+1; j < this.events.length; j++) {
                 var e2 = this.events[j];
+                if(!e2) {
+                    continue;
+                }
                 if(e.name == e2.name && e.startTime.date.getTime() == e2.startTime.date.getTime() && e.endTime.date.getTime() == e2.endTime.date.getTime()) {
                     this.events.splice(j, 1);
                     j--;
@@ -250,6 +259,10 @@ class CalendarEvents {
         var soonestEventIndex = this.events.length-1;
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
+            if(!e) {
+                continue;
+            }
+
             var nextEventSeconds = e.endTime.secondsUntil();
             if(!e.skipped && nextEventSeconds >= 0 && nextEventSeconds < soonestEventSeconds) {
                 soonestEventSeconds = e.endTime.secondsUntil();
@@ -281,18 +294,22 @@ class CalendarEvents {
         return this.getSelectedEvent();
     }
 
-    public getSelectedEvent() {
+    public getSelectedEvent(): CalendarEvent {
         if(this.events.length > 0) {
-            return this.events[this.selectedEvent];
+            var calendarEvent = this.events[this.selectedEvent];
+            if(calendarEvent) {
+                return calendarEvent;
+            } else {
+                return new CalendarEvent("undefined", "", new date.MyDate(), new date.MyDate());
+            }
         } else {
-            return new CalendarEvent("No events", "", new MyDate(), new MyDate());
+            return new CalendarEvent("No events", "", new date.MyDate(), new date.MyDate());
         }
     }
 
     public setRefocusTimeout() {
         this.clearRefocusTimeout();
         this.refocusTimeout = setTimeout(()=>{
-            var e = this.selectUpcomingEvent();
             this.clearRefocusTimeout();
             // TODO: find another way to do this
             // this.clockFace.redrawAll();

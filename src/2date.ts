@@ -1,15 +1,15 @@
-
-class MyDate {
+import { zeroPad } from "./1util";
+export class MyDate {
     date: Date;
 
     constructor(dateStr?: string|number, timeStr?: string) {
         if(timeStr) {
             let timeParts = timeStr.split(":");
             let hourStr = (timeParts[0] == "12") ? "0" : timeParts[0];
-            if(timeStr.endsWith("pm")) {
-                hourStr = zeroPad((parseInt(hourStr) + 12));
+            if(timeStr.endsWith("pm", undefined)) {
+                hourStr = zeroPad((parseInt(hourStr, 10) + 12));
             } else {
-                hourStr = zeroPad(parseInt(hourStr));
+                hourStr = zeroPad(parseInt(hourStr, 10));
             }
             let minStr = timeParts[1];
             if(minStr.length > 2) {

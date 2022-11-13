@@ -1,8 +1,13 @@
-const USE_SECONDS_DURATION = 1000 * 30;
+import { ClockFace } from './5clockface';
+import { CalendarUpdater } from './4calendarupdate';
+import { ClockInterval } from "./7clockinterval";
+import { CalendarEvents } from './3calendarevents';
 
-var revertToMinutesTimer = null as any;
+// const USE_SECONDS_DURATION = 1000 * 30;
 
-function setupBangleEvents(clockFace: ClockFace, clockInterval: ClockInterval, eventsObj: CalendarEvents) {
+// var revertToMinutesTimer = null as any;
+
+export function setupBangleEvents(clockFace: ClockFace, clockInterval: ClockInterval, eventsObj: CalendarEvents) {
     // Bangle.on('twist', function() {
     //     clockInterval.useSecondInterval();
     //     if(revertToMinutesTimer) {
@@ -47,7 +52,11 @@ function setupBangleEvents(clockFace: ClockFace, clockInterval: ClockInterval, e
     });
 
     var ignoreTouch = false;
-    Bangle.on('touch', function(button, xy) {
+    Bangle.on('touch', function(_, xy) {
+        if(!xy) {
+            return;
+        }
+
         // This ignore touch makes it so that touch events are not registered for clicking buttons
         if(ignoreTouch) {
             return;
@@ -85,16 +94,16 @@ function setupBangleEvents(clockFace: ClockFace, clockInterval: ClockInterval, e
         }
     });
 
-    (function() {
-        var _GB = global.GB;
-        global.GB = function(j: any) {
-          switch (j.t) {
-            case "calendar":
-              console.log(j.id + ": " + j.title);
-              Terminal.println(j.id + ": " + j.title);
-              break;
-          }
-          if (_GB)_GB(j);
-        };
-      })();
+    // (function() {
+    //     var _GB = banglejs.GB;
+    //     banglejs.GB = function(j: any) {
+    //       switch (j.t) {
+    //         case "calendar":
+    //           console.log(j.id + ": " + j.title);
+    //           Terminal.println(j.id + ": " + j.title);
+    //           break;
+    //       }
+    //       if (_GB)_GB(j);
+    //     };
+    //   })();
 }

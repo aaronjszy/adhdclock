@@ -1,5 +1,7 @@
+import { ClockFace } from './5clockface';
+import { CalendarEvents } from './3calendarevents';
 
-class CalendarUpdater {
+export class CalendarUpdater {
     clockFace: ClockFace;
     events: CalendarEvents;
 
@@ -9,9 +11,9 @@ class CalendarUpdater {
     }
 
     public forceCalendarUpdate() {
-        var cal = require("Storage").readJSON("android.calendar.json", true)||[];
+        // var cal = require("Storage").readJSON("android.calendar.json", true)||[];
         if(NRF.getSecurityStatus().connected) {
-            this.gbSend(JSON.stringify({t:"force_calendar_sync", ids: []}));
+            this.gbSend(JSON.stringify({t:"force_calendar_sync", ids: []}, undefined, undefined));
             E.showAlert("Request sent to the phone").then(()=>{
                 this.clockFace.redrawAll();
             });
@@ -23,8 +25,10 @@ class CalendarUpdater {
     }
 
     public gbSend(message: string) {
+        // @ts-ignore
         Bluetooth.println("");
-        Bluetooth.println(JSON.stringify(message));
+        // @ts-ignore
+        Bluetooth.println(JSON.stringify(message, undefined, undefined));
     }
     
     public readCalendarDataAndUpdate() {

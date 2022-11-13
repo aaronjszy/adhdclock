@@ -1,4 +1,8 @@
-class ClockFace {
+import { fillLine } from "./1customlib";
+import { MyDate } from "./2date";
+import { CalendarEvents, CalendarEvent, TrackedEventBoundary } from './3calendarevents';
+
+export class ClockFace {
     private eventsObj: CalendarEvents;
 
     constructor(eventsObj: CalendarEvents) {
@@ -28,7 +32,7 @@ class ClockFace {
 
         g.setFont("Vector", 40);
         var timeRemaining = e.displayTimeRemaining()
-        var strMetrics = g.stringMetrics(timeRemaining);
+        // var strMetrics = g.stringMetrics(timeRemaining);
         g.drawString(timeRemaining, X, Y, false);
 
         // if(showSeconds) {

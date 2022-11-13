@@ -1,10 +1,11 @@
-class ClockInterval {
+
+export class ClockInterval {
     private tickHandler: (clockInterval: ClockInterval) => void;
 
-    private minuteTimeout: NodeJS.Timeout | undefined;
+    private minuteTimeout: any;
     private minuteIntervalEnabled: boolean;
 
-    private secondTimeout: NodeJS.Timeout | undefined;
+    private secondTimeout: any;
     private secondIntervalEnabled: boolean;
 
     constructor() {

@@ -21,12 +21,12 @@ retry() {
 
 upload() {
     gotoprojectroot
-    retry espruino -d "Bngle.js cd9f" "$1"
+    retry espruino -d "Bangle.js cd9f" "$1"
 }
 
 uploadandwatch() {
     gotoprojectroot
-    retry espruino -d "Bngle.js cd9f" -w "$1"
+    retry espruino -d "Bangle.js cd9f" -w "$1"
 }
 
 build() {
