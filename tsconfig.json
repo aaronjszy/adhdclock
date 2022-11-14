@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "outDir": "./dist",
-    "module": "commonjs",
+    "outDir": "./build/tsout",
+    "module": "es6",
     "noImplicitAny": true,
     "target": "es6",
     "allowUnreachableCode": false,

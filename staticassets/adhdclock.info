@@ -1,7 +1,0 @@
-{
-  "id":"adhdclock",
-  "name":"ADHD Clock",
-  "type":"clock",
-  "src":"adhdclock.app.js",
-  "icon":"timer.img"
-}
