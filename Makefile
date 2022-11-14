@@ -30,9 +30,9 @@ build-uglify:
 
 download: COMMAND=espruino -d "Bangle.js cd9f" --download "$(FILE)"
 download: retry
-	mkdir -p $(DOWNLOADDIR)
+	mkdir -p $(BUILDDIR)/$(DOWNLOADDIR)
 	cat "$(FILE)" | jq . | sponge "$(FILE)"
-	mv $(FILE) $(DOWNLOADDIR)/$(FILE)
+	mv $(FILE) $(BUILDDIR)/$(DOWNLOADDIR)/$(FILE)
 
 watch: build uploadandwatch
 
