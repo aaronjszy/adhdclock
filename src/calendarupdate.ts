@@ -11,7 +11,6 @@ export class CalendarUpdater {
     }
 
     public forceCalendarUpdate() {
-        // var cal = require("Storage").readJSON("android.calendar.json", true)||[];
         if(NRF.getSecurityStatus().connected) {
             this.gbSend(JSON.stringify({t:"force_calendar_sync", ids: []}, undefined, undefined));
             E.showAlert("Request sent to the phone").then(()=>{

@@ -1,25 +1,12 @@
 import { ClockFace } from './clockface';
 import { CalendarUpdater } from './calendarupdate';
-import { ClockInterval } from "./clockinterval";
 import { CalendarEvents } from './calendarevents';
 
 // const USE_SECONDS_DURATION = 1000 * 30;
 
 // var revertToMinutesTimer = null as any;
 
-export function setupBangleEvents(clockFace: ClockFace, clockInterval: ClockInterval, eventsObj: CalendarEvents) {
-    // Bangle.on('twist', function() {
-    //     clockInterval.useSecondInterval();
-    //     if(revertToMinutesTimer) {
-    //         clearTimeout(revertToMinutesTimer);
-    //         revertToMinutesTimer = null;
-    //     }
-    //     revertToMinutesTimer = setInterval(function() {
-    //         clockInterval.useMinuteInterval();
-    //         revertToMinutesTimer = null;
-    //     }, USE_SECONDS_DURATION);
-    // });
-
+export function setupBangleEvents(clockFace: ClockFace, eventsObj: CalendarEvents) {
     // When button is pressed save state and open the launcher
     setWatch(() => {
         eventsObj.save();
@@ -83,14 +70,6 @@ export function setupBangleEvents(clockFace: ClockFace, clockInterval: ClockInte
                     clockFace.redrawAll();
                 });
             }, 200);
-        }
-    });
-
-    Bangle.on('lcdPower', on => {
-        clockInterval.disableMinuteInterval();
-        if (on) {
-            clockInterval.enableMinuteInterval();
-            clockFace.redrawAll(); // draw immediately
         }
     });
 

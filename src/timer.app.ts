@@ -1,7 +1,6 @@
 import { ClockFace } from './clockface';
 import { CalendarUpdater } from './calendarupdate';
 import { MyDate } from "./date";
-import { ClockInterval } from "./clockinterval";
 import { CalendarEvents, CalendarEvent } from './calendarevents';
 import { setupBangleEvents } from './bangleevents';
 
@@ -29,18 +28,7 @@ Bangle.loadWidgets();
 Bangle.drawWidgets();
 clockFace.redrawAll();
 
-var clockInterval = new ClockInterval();
-clockInterval.setTickHandler(() => {
-    clockFace.redrawAll();
-
-    //TODO the clockface can tell just the tick handler when to next redraw
-    // this is much simpler and should be more reliable
-    // when we swipe, the swipe handler can also call this to schedule the next redraw
-    // return clockFace.nextRedrawTime();
-});
-clockInterval.useMinuteInterval();
-
-setupBangleEvents(clockFace, clockInterval, eventsObj);
+setupBangleEvents(clockFace, eventsObj);
 
 // Put this in ide to send a test message
 // GB({"t": "calendar","id": 36,"type": 0,"timestamp": 1665892800,"durationInSeconds": 1800,"title": "Zzz","description": "","location": "","calName": "aaronszymanski@gmail.com/BangleJS","color": -4989844,"allDay": false})

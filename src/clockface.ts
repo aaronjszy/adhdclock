@@ -1,21 +1,23 @@
 import { fillLine } from "./customlib";
 import { MyDate } from "./date";
+import { ClockInterval } from "./clockinterval";
 import { CalendarEvents, CalendarEvent, TrackedEventBoundary } from './calendarevents';
 
 export class ClockFace {
     private eventsObj: CalendarEvents;
+    private clockInterval: ClockInterval;
 
     constructor(eventsObj: CalendarEvents) {
         this.eventsObj = eventsObj;
+        this.clockInterval = new ClockInterval(this.redrawAll)
     }
 
     public redrawAll() {
+        this.clockInterval.scheduleNextMinuteTick();
+        
         g.reset();
         g.clearRect({x: 0, y: 24, x2: g.getHeight(), y2: g.getWidth()});
-        this.draw();
-    }
 
-    private draw() {
         var now = new MyDate();
         var e = this.eventsObj.getSelectedEvent();
 
