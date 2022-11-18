@@ -2,10 +2,6 @@ import { ClockFace } from './clockface';
 import { CalendarUpdater } from './calendarupdate';
 import { CalendarEvents } from './calendarevents';
 
-// const USE_SECONDS_DURATION = 1000 * 30;
-
-// var revertToMinutesTimer = null as any;
-
 export function setupBangleEvents(clockFace: ClockFace, eventsObj: CalendarEvents) {
     // When button is pressed save state and open the launcher
     setWatch(() => {

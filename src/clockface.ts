@@ -9,7 +9,9 @@ export class ClockFace {
 
     constructor(eventsObj: CalendarEvents) {
         this.eventsObj = eventsObj;
-        this.clockInterval = new ClockInterval(this.redrawAll)
+        this.clockInterval = new ClockInterval(() => {
+            this.redrawAll()
+        })
     }
 
     public redrawAll() {

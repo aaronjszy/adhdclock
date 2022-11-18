@@ -232,17 +232,6 @@ export class CalendarEvents {
         }
     }
 
-    // // TODO implement a function to drop past events
-    // public removeOldEvents() {
-    //     var futureEvents: CalendarEvent[];
-    //     for(var i = 0; i < this.events.length; i++) {
-    //         if(!this.events[i].isExpired()) {
-    //             futureEvents.append(this.events[i]);
-    //         }
-    //     }
-    //     this.events = futureEvents;
-    // }
-
     public selectEvent(event: CalendarEvent) {
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
