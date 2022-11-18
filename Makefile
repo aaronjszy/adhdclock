@@ -4,15 +4,15 @@ DOWNLOADDIR=storage
 
 # ----primary build targets-----------------------------------
 
-clear:
+clean:
 	rm -rf $(BUILDDIR)
 
-build: clear build-tsc build-rollup build-uglify	
+build: clean build-tsc build-rollup build-uglify	
 
 install: build upload
 
 deploy: build
-	cp adhdclock.app.js ~/repos/BangleApps/apps/adhdclock/app.js
+	cp ./$(BUILDDIR)/$(APPFILE) ~/repos/BangleApps/apps/adhdclock/app.js
 	cd ~/repos/BangleApps && git commit -a -m "Update adhdclock/app.js" && git push
 
 # ----granular build targets-----------------------------------
@@ -31,8 +31,8 @@ build-uglify:
 download: COMMAND=espruino -d "Bangle.js cd9f" --download "$(FILE)"
 download: retry
 	mkdir -p $(BUILDDIR)/$(DOWNLOADDIR)
-	cat "$(FILE)" | jq . | sponge "$(FILE)"
 	mv $(FILE) $(BUILDDIR)/$(DOWNLOADDIR)/$(FILE)
+# cat "$(FILE)" | jq . | sponge "$(FILE)"
 
 watch: build uploadandwatch
 
@@ -41,10 +41,10 @@ web: openbrowser retry
 openbrowser:
 	open http://localhost:8080
 
-upload: COMMAND=espruino -d "Bangle.js cd9f" "./$(BUILDDIR)/$(APPFILE)"
+upload: COMMAND=espruino -d "Bangle.js cd9f" "./$(BUILDDIR)/$(APPFILE)" --storage $(APPFILE):-
 upload: retry
 
-uploadandwatch: COMMAND=espruino -d "Bangle.js cd9f" -w "$(BUILDDIR)/$(APPFILE)"
+uploadandwatch: COMMAND=espruino -d "Bangle.js cd9f" -w "$(BUILDDIR)/$(APPFILE)" --storage $(APPFILE):-
 uploadandwatch: retry
 
 downloadevents: FILE=adhdclock.events
@@ -53,7 +53,10 @@ downloadevents: download
 downloadcalendar: FILE=android.calendar.json
 downloadcalendar: download
 
-downloadall: downloadevents downloadcalendar
+downloadapp: FILE=$(APPFILE)
+downloadapp: download
+
+downloadall: downloadevents downloadcalendar downloadapp
 
 retry:
 	until $(COMMAND); do    \

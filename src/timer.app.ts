@@ -3,7 +3,6 @@ import { CalendarUpdater } from './calendarupdate';
 import { MyDate } from "./date";
 import { ClockInterval } from "./clockinterval";
 import { CalendarEvents, CalendarEvent } from './calendarevents';
-
 import { setupBangleEvents } from './bangleevents';
 
 require("Font7x11Numeric7Seg").add(Graphics);
@@ -42,6 +41,6 @@ clockInterval.setTickHandler(() => {
 clockInterval.useMinuteInterval();
 
 setupBangleEvents(clockFace, clockInterval, eventsObj);
- 
+
 // Put this in ide to send a test message
 // GB({"t": "calendar","id": 36,"type": 0,"timestamp": 1665892800,"durationInSeconds": 1800,"title": "Zzz","description": "","location": "","calName": "aaronszymanski@gmail.com/BangleJS","color": -4989844,"allDay": false})

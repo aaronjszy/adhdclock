@@ -43,13 +43,8 @@ export class CalendarUpdater {
             });
             return;
         } else {
-            var updateCount = this.events.updateFromCalendar(calendarJSON);
-
-            E.showAlert("Got calendar data. Updated "+updateCount+".").then(() => {
-                E.showAlert().then(() => {
-                    this.clockFace.redrawAll();
-                });
-            });
+            this.events.updateFromCalendar(calendarJSON);
+            this.clockFace.redrawAll();
         }
     }    
 }

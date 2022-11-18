@@ -94,16 +94,17 @@ export function setupBangleEvents(clockFace: ClockFace, clockInterval: ClockInte
         }
     });
 
-    // (function() {
-    //     var _GB = banglejs.GB;
-    //     banglejs.GB = function(j: any) {
-    //       switch (j.t) {
-    //         case "calendar":
-    //           console.log(j.id + ": " + j.title);
-    //           Terminal.println(j.id + ": " + j.title);
-    //           break;
-    //       }
-    //       if (_GB)_GB(j);
-    //     };
-    //   })();
+    (function() {
+        var _GB = global.GB;
+        global.GB = function(j: any) {
+          switch (j.t) {
+            case "calendar":
+              console.log(j.id + ": " + j.title);
+              // @ts-ignore
+              Terminal.println(j.id + ": " + j.title);
+              break;
+          }
+          if (_GB)_GB(j);
+        };
+      })();
 }
