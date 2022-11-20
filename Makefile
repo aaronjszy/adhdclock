@@ -56,6 +56,10 @@ downloadcalendar: download
 downloadapp: FILE=$(APPFILE)
 downloadapp: download
 
+downloadlog: FILE=adhdclock.eventlog
+downloadlog: download
+	code $(BUILDDIR)/$(DOWNLOADDIR)/$(FILE)
+
 downloadall: downloadevents downloadcalendar downloadapp
 
 retry:
