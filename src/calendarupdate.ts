@@ -1,5 +1,6 @@
 import { ClockFace } from './clockface';
 import { CalendarEvents } from './calendarevents';
+import { reportEvent } from './util';
 
 export class CalendarUpdater {
     clockFace: ClockFace;
@@ -10,9 +11,10 @@ export class CalendarUpdater {
         this.events = events;
     }
 
-    public forceCalendarUpdate() {
+    public userForceCalendarUpdateEvent() {
         if(NRF.getSecurityStatus().connected) {
-            this.gbSend(JSON.stringify({t:"force_calendar_sync", ids: []}, undefined, undefined));
+            reportEvent("userForceCalendarUpdateEvent");
+            this.forceCalendarSync();
             E.showAlert("Request sent to the phone").then(()=>{
                 this.clockFace.redrawAll();
             });
@@ -23,15 +25,29 @@ export class CalendarUpdater {
         }
     }
 
-    public gbSend(message: string) {
+    public forceCalendarSync() {
+        if(NRF.getSecurityStatus().connected) {
+            reportEvent("forceCalendarSync");
+            var cal = require("Storage").readJSON("android.calendar.json",true);
+            if (!cal || !Array.isArray(cal)) cal = [];
+            this.gbSend({t:"force_calendar_sync", ids: cal.map((e: { id: any; })=>e.id)});
+        }
+    }
+
+    public gbSend(jsonMessage: any) {
+        var message = JSON.stringify(jsonMessage, undefined, undefined);
+        reportEvent("gbSend: " + message);
+
         // @ts-ignore
         Bluetooth.println("");
         // @ts-ignore
-        Bluetooth.println(JSON.stringify(message, undefined, undefined));
+        Bluetooth.println(message);
     }
     
     public readCalendarDataAndUpdate() {
+        reportEvent("readCalendarDataAndUpdate");
         this.events.removeExpiredEvents();
+        this.forceCalendarSync();
 
         var calendarJSON = require("Storage").readJSON("android.calendar.json",true);
         if(!calendarJSON) {

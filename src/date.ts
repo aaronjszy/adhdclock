@@ -93,6 +93,10 @@ export class MyDate {
         return `${secondsDisplay}`;
     }
 
+    string(): string{
+        return this.date.getFullYear() + "-" + zeroPad(this.date.getMonth()+1) + "-" + zeroPad(this.date.getDate()) + " " + zeroPad(this.date.getHours()) + ":" + zeroPad(this.date.getMinutes()) + ":" + zeroPad(this.date.getSeconds());
+    }
+
     equals(other: MyDate): boolean {
         return this.date.getTime() == other.date.getTime();
     }

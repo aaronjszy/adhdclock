@@ -30,7 +30,7 @@ export function setupBangleEvents(clockFace: ClockFace, eventsObj: CalendarEvent
             }
         }
         if(directionUD == 1 && directionLR == 0) {
-            (new CalendarUpdater(clockFace, eventsObj)).forceCalendarUpdate();
+            (new CalendarUpdater(clockFace, eventsObj)).userForceCalendarUpdateEvent();
         }
     });
 
@@ -68,18 +68,4 @@ export function setupBangleEvents(clockFace: ClockFace, eventsObj: CalendarEvent
             }, 200);
         }
     });
-
-    (function() {
-        var _GB = global.GB;
-        global.GB = function(j: any) {
-          switch (j.t) {
-            case "calendar":
-              console.log(j.id + ": " + j.title);
-              // @ts-ignore
-              Terminal.println(j.id + ": " + j.title);
-              break;
-          }
-          if (_GB)_GB(j);
-        };
-      })();
 }

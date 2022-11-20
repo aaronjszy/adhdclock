@@ -79,9 +79,10 @@ export class CalendarEvent {
     }
 
     getTrackedEventBoundary(): TrackedEventBoundary {
-        // if (this.startTime.date.getTime() == this.endTime.date.getTime()) {
-        //     return TrackedEventBoundary.END;
-        // }
+        // Change the tracked event event boundary from start to end if the start time has already elapsed
+        if(this.trackedEventBoundary == TrackedEventBoundary.START && this.startTime.secondsUntil() < 0) {
+            this.trackedEventBoundary = TrackedEventBoundary.END
+        }
         return this.trackedEventBoundary;
     }
 
@@ -168,8 +169,16 @@ export class CalendarEvents {
         var updated = 0;
         var now = new Date();
         var maxEventTimeOffset = 1000*60*60*24;
+        
+        // var caltest = []
         for(var i = 0; i < calendar.length; i++) {
             var calendarEvent = calendar[i];
+            // if(calendarEvent.title == "Zzz") {
+            //     caltest.push({
+            //         title: calendarEvent.title,
+            //         timestamp: new date.MyDate(calendarEvent.timestamp*1000).string()
+            //     })
+            // }
             var calStartEventTimeMillis = calendarEvent.timestamp*1000;
             var calEndEventTimeMillis = (calendarEvent.timestamp+calendarEvent.durationInSeconds)*1000;
 
@@ -186,6 +195,17 @@ export class CalendarEvents {
                 updated++;
             }
         }
+
+        // sort and print each caltest item by timestamp string
+        // caltest.sort((a, b) => {
+        //     return a.timestamp > b.timestamp ? 1 : -1;
+        // })
+        // for(var i = 0; i < caltest.length; i++) {
+        //     // @ts-ignore
+        //     console.log(caltest[i].title + " " + caltest[i].timestamp);
+        // }
+
+
         this.dedupEvents();
         this.sortEvents();
         this.selectUpcomingEvent();
