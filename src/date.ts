@@ -1,6 +1,6 @@
 import { zeroPad } from "./util";
 
-export class MyDate {
+export class EventDate {
     date: Date;
 
     constructor(dateStr?: string|number, timeStr?: string) {
@@ -97,7 +97,7 @@ export class MyDate {
         return this.date.getFullYear() + "-" + zeroPad(this.date.getMonth()+1) + "-" + zeroPad(this.date.getDate()) + " " + zeroPad(this.date.getHours()) + ":" + zeroPad(this.date.getMinutes()) + ":" + zeroPad(this.date.getSeconds());
     }
 
-    equals(other: MyDate): boolean {
+    equals(other: EventDate): boolean {
         return this.date.getTime() == other.date.getTime();
     }
 }

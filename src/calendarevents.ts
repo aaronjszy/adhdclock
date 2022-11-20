@@ -1,23 +1,20 @@
 import * as date from "./date";
+
 export enum TrackedEventBoundary {
     START,
     END,
 }
 
 export class CalendarEvent {
-    alarmHandler: ((event: CalendarEvent) => void);
-    id: string;
     name: string;
     description: string;
-    startTime: date.MyDate;
-    endTime: date.MyDate;
+    startTime: date.EventDate;
+    endTime: date.EventDate;
     skipped: boolean;
     bangleCalendarEventId: number | undefined;
     trackedEventBoundary: TrackedEventBoundary;
 
-    constructor(name: string, description: string, startTime: date.MyDate, endTime: date.MyDate) {
-        this.alarmHandler = () => {};
-        this.id = `${name}/${new Date().getTime().toString(10)}`;
+    constructor(name: string, description: string, startTime: date.EventDate, endTime: date.EventDate) {
         this.name = name;
         this.description = description;
         this.startTime = startTime;
@@ -28,30 +25,23 @@ export class CalendarEvent {
     }
 
     public static fromJSON(json: any): CalendarEvent {
-        var e = new CalendarEvent(json.name, json.description, new date.MyDate(json.startTime.date), new date.MyDate(json.endTime.date))
-        e.id = json.id
+        var e = new CalendarEvent(json.name, json.description, new date.EventDate(json.startTime.date), new date.EventDate(json.endTime.date))
         e.skipped = json.skipped
         e.bangleCalendarEventId = json.bangleCalendarEventId
         e.trackedEventBoundary = json.trackedEventBoundary
         return e
     }
 
-    public setAlarmHandler(alarmHandler: (event: CalendarEvent) => void) {
-        this.alarmHandler = alarmHandler;
-    }
-
-    update(event: CalendarEvent): boolean {
+    public update(event: CalendarEvent): boolean {
         // This check is here just in case the provided event is not the same as this event. This should not happen.
         if(event.bangleCalendarEventId != this.bangleCalendarEventId) {
             return false;
         }
 
         // set equivalent event properties for fields we dont want included in the isModified check
-        event.id = this.id;
         event.bangleCalendarEventId = this.bangleCalendarEventId;
         event.skipped = this.skipped;
         event.trackedEventBoundary = this.trackedEventBoundary;
-        event.alarmHandler = this.alarmHandler;
 
         var isModified = JSON.stringify(event, undefined, undefined) != JSON.stringify(this, undefined, undefined);
 
@@ -65,39 +55,39 @@ export class CalendarEvent {
         return isModified;
     }
 
-    setBangleCalendarEventId(bangleCalendarEventId: number) {
+    public setBangleCalendarEventId(bangleCalendarEventId: number) {
         this.bangleCalendarEventId = bangleCalendarEventId;
     }
 
-    toggleSkip(): boolean {
+    public toggleSkip(): boolean {
         this.skipped = !this.skipped;
         return this.skipped
     }
 
-    toggleTrackedEventBoundary() {
+    public toggleTrackedEventBoundary() {
         this.trackedEventBoundary = (this.trackedEventBoundary == TrackedEventBoundary.END) ? TrackedEventBoundary.START : TrackedEventBoundary.END;
     }
 
-    getTrackedEventBoundary(): TrackedEventBoundary {
+    public getTrackedEventBoundary(): TrackedEventBoundary {
         // Change the tracked event event boundary from start to end if the start time has already elapsed
-        if(this.trackedEventBoundary == TrackedEventBoundary.START && this.startTime.secondsUntil() < 0) {
-            this.trackedEventBoundary = TrackedEventBoundary.END
-        }
+        // if(this.trackedEventBoundary == TrackedEventBoundary.START && this.startTime.secondsUntil() < 0) {
+        //     this.trackedEventBoundary = TrackedEventBoundary.END
+        // }
         return this.trackedEventBoundary;
     }
 
-    getTrackedEventDate(): date.MyDate {
+    public getTrackedEventDate(): date.EventDate {
         if(this.trackedEventBoundary == TrackedEventBoundary.START) {
             return this.startTime;
         }
         return this.endTime;
     }
 
-    displayName(): string {
+    public displayName(): string {
         return this.name.substr(0, 14);
     }
 
-    displayDescription(): string {
+    public displayDescription(): string {
         if(this.description.length == 0) {
             return "empty";
         }
@@ -108,20 +98,20 @@ export class CalendarEvent {
         return this.description;
     }
 
-    displayTimeRemaining(): string {
+    public displayTimeRemaining(): string {
         return this.getTrackedEventDate().timeRemainingAsString();
     }
 
-    displaySecondsRemaining(): string {
+    public displaySecondsRemaining(): string {
         return this.getTrackedEventDate().secondsRemainingAsString();
     }
 
-    durationMinutes(): number {
+    public durationMinutes(): number {
         var durationMillis = this.endTime.unixTimestampMillis() - this.startTime.unixTimestampMillis()
         return durationMillis / 1000 / 60;
     }
 
-    isExpired(): boolean{
+    public isExpired(): boolean{
         return false;
     }
 }
@@ -168,43 +158,40 @@ export class CalendarEvents {
     public updateFromCalendar(calendar: any) {
         var updated = 0;
         var now = new Date();
-        var maxEventTimeOffset = 1000*60*60*24;
+        var eventTimeWindowMillis = 1000*60*60*24; // 24 hours
         
-        // var caltest = []
         for(var i = 0; i < calendar.length; i++) {
             var calendarEvent = calendar[i];
-            // if(calendarEvent.title == "Zzz") {
-            //     caltest.push({
-            //         title: calendarEvent.title,
-            //         timestamp: new date.MyDate(calendarEvent.timestamp*1000).string()
-            //     })
-            // }
             var calStartEventTimeMillis = calendarEvent.timestamp*1000;
             var calEndEventTimeMillis = (calendarEvent.timestamp+calendarEvent.durationInSeconds)*1000;
 
-            if (calEndEventTimeMillis > (now.getTime()+maxEventTimeOffset) || calEndEventTimeMillis < (now.getTime()-maxEventTimeOffset)) {
+            // Calendar event is within 24 hours of the current time
+            if (calEndEventTimeMillis > (now.getTime()+eventTimeWindowMillis) || calEndEventTimeMillis < (now.getTime()-eventTimeWindowMillis))
                 continue;
-            }
-            if(!calendarEvent.title || calendarEvent.title == "" || calendarEvent.t != "calendar" || calendarEvent.allDay || calendarEvent.durationInSeconds == 86400 || calendarEvent.type != 0) {
+            // Ignore events without required fields / values
+            if(calendarEvent.t != "calendar" || !calendarEvent.title || calendarEvent.title == "" || calendarEvent.type != 0)
                 continue;
-            }
+            // Ignore all day events
+            if(calendarEvent.allDay || calendarEvent.durationInSeconds == 86400)
+                continue;
 
-            var newEvent = new CalendarEvent(calendarEvent.title, calendarEvent.description, new date.MyDate(calStartEventTimeMillis), new date.MyDate(calEndEventTimeMillis));
+            var newEvent = new CalendarEvent(calendarEvent.title, calendarEvent.description, new date.EventDate(calStartEventTimeMillis), new date.EventDate(calEndEventTimeMillis));
             newEvent.setBangleCalendarEventId(calendarEvent.id);
-            if(this.addEvent(newEvent)) {
+            if(this.upsertEvent(newEvent)) {
                 updated++;
             }
         }
 
-        // sort and print each caltest item by timestamp string
-        // caltest.sort((a, b) => {
-        //     return a.timestamp > b.timestamp ? 1 : -1;
-        // })
-        // for(var i = 0; i < caltest.length; i++) {
-        //     // @ts-ignore
-        //     console.log(caltest[i].title + " " + caltest[i].timestamp);
-        // }
-
+        // Remove events missing from the the calendar
+        this.events = this.events.filter((e) => {
+            for(var i = 0; i < calendar.length; i++) {
+                var calendarEvent = calendar[i];
+                if(calendarEvent.id == e.bangleCalendarEventId) {
+                    return true;
+                }
+            }
+            return false;
+        });
 
         this.dedupEvents();
         this.sortEvents();
@@ -213,7 +200,7 @@ export class CalendarEvents {
         return updated;
     }
 
-    public addEvent(event: CalendarEvent): boolean {
+    public upsertEvent(event: CalendarEvent): boolean {
         for(var i = 0; i < this.events.length; i++) {
             var e = this.events[i];
             if(!e) {
@@ -309,10 +296,10 @@ export class CalendarEvents {
             if(calendarEvent) {
                 return calendarEvent;
             } else {
-                return new CalendarEvent("undefined", "", new date.MyDate(), new date.MyDate());
+                return new CalendarEvent("undefined", "", new date.EventDate(), new date.EventDate());
             }
         } else {
-            return new CalendarEvent("No events", "", new date.MyDate(), new date.MyDate());
+            return new CalendarEvent("No events", "", new date.EventDate(), new date.EventDate());
         }
     }
 

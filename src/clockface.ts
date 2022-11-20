@@ -1,5 +1,5 @@
 import { fillLine } from "./customlib";
-import { MyDate } from "./date";
+import { EventDate } from "./date";
 import { ClockInterval } from "./clockinterval";
 import { CalendarEvents, CalendarEvent, TrackedEventBoundary } from './calendarevents';
 
@@ -20,7 +20,7 @@ export class ClockFace {
         g.reset();
         g.clearRect({x: 0, y: 24, x2: g.getHeight(), y2: g.getWidth()});
 
-        var now = new MyDate();
+        var now = new EventDate();
         var e = this.eventsObj.getSelectedEvent();
 
         var X = 176*0.5;

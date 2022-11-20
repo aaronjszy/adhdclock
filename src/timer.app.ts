@@ -1,6 +1,6 @@
 import { ClockFace } from './clockface';
 import { CalendarUpdater } from './calendarupdate';
-import { MyDate } from "./date";
+import { EventDate } from "./date";
 import { CalendarEvents, CalendarEvent } from './calendarevents';
 import { setupBangleEvents } from './bangleevents';
 import { reportEvent } from './util';
@@ -14,7 +14,7 @@ reportEvent("--app started-----");
     global.GB = function(j: any) {
       switch (j.t) {
         case "calendar":
-            reportEvent("+" + j.id + ": " + j.title + " " + new MyDate(j.timestamp*1000).string());
+            reportEvent("+" + j.id + ": " + j.title + " " + new EventDate(j.timestamp*1000).string());
             break;
         case "calendar-":
             reportEvent("-" + j.id);
@@ -32,7 +32,7 @@ reportEvent("--app started-----");
 })();
 
 var eventsObj = new CalendarEvents([]).restore();
-// var testevent = new CalendarEvent("test", "", new MyDate("2022-11-19", "05:13pm"), new MyDate("2022-11-19", "5:30pm"))
+// var testevent = new CalendarEvent("test", "", new EventDate("2022-11-19", "05:13pm"), new EventDate("2022-11-19", "5:30pm"))
 // eventsObj.addEvent(testevent);
 
 var clockFace = new ClockFace(eventsObj);
@@ -42,10 +42,10 @@ setTimeout(function() {
 }, 10);
 
 if(!eventsObj.hasEvents()) {
-    var now = new MyDate();
+    var now = new EventDate();
     now.addMinutes(60);
     now.floorMinutes();
-    eventsObj.addEvent(new CalendarEvent("next hour", "", now, now));
+    eventsObj.upsertEvent(new CalendarEvent("next hour", "", now, now));
 }
 
 eventsObj.selectUpcomingEvent();
