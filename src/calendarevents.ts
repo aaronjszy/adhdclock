@@ -6,12 +6,12 @@ export enum TrackedEventBoundary {
 }
 
 export class CalendarEvent {
+    calendarEventId: number | undefined;
     name: string;
     description: string;
     startTime: date.EventDate;
     endTime: date.EventDate;
     skipped: boolean;
-    bangleCalendarEventId: number | undefined;
     trackedEventBoundary: TrackedEventBoundary;
 
     constructor(name: string, description: string, startTime: date.EventDate, endTime: date.EventDate) {
@@ -20,26 +20,26 @@ export class CalendarEvent {
         this.startTime = startTime;
         this.endTime = endTime;
         this.skipped = false;
-        this.bangleCalendarEventId = undefined;
+        this.calendarEventId = undefined;
         this.trackedEventBoundary = TrackedEventBoundary.END;
     }
 
     public static fromJSON(json: any): CalendarEvent {
         var e = new CalendarEvent(json.name, json.description, new date.EventDate(json.startTime.date), new date.EventDate(json.endTime.date))
         e.skipped = json.skipped
-        e.bangleCalendarEventId = json.bangleCalendarEventId
+        e.calendarEventId = json.calendarEventId
         e.trackedEventBoundary = json.trackedEventBoundary
         return e
     }
 
     public update(event: CalendarEvent): boolean {
         // This check is here just in case the provided event is not the same as this event. This should not happen.
-        if(event.bangleCalendarEventId != this.bangleCalendarEventId) {
+        if(event.calendarEventId != this.calendarEventId) {
             return false;
         }
 
         // set equivalent event properties for fields we dont want included in the isModified check
-        event.bangleCalendarEventId = this.bangleCalendarEventId;
+        event.calendarEventId = this.calendarEventId;
         event.skipped = this.skipped;
         event.trackedEventBoundary = this.trackedEventBoundary;
 
@@ -55,8 +55,8 @@ export class CalendarEvent {
         return isModified;
     }
 
-    public setBangleCalendarEventId(bangleCalendarEventId: number) {
-        this.bangleCalendarEventId = bangleCalendarEventId;
+    public setBangleCalendarEventId(calendarEventId: number) {
+        this.calendarEventId = calendarEventId;
     }
 
     public toggleSkip(): boolean {
@@ -148,17 +148,12 @@ export class CalendarEvents {
         return this
     }
 
-    public removeExpiredEvents() {
-        var twelveHoursAgo = new Date().getTime() - (12 * 60 * 60 * 1000);
-        this.events = this.events.filter((e) => {
-            return e.endTime.unixTimestampMillis() > twelveHoursAgo;
-        });
-    }
-
     public updateFromCalendar(calendar: any) {
         var updated = 0;
         var now = new Date();
         var eventTimeWindowMillis = 1000*60*60*24; // 24 hours
+
+        let calendarIDs: { [name: string]: boolean } = {};
         
         for(var i = 0; i < calendar.length; i++) {
             var calendarEvent = calendar[i];
@@ -180,24 +175,43 @@ export class CalendarEvents {
             if(this.upsertEvent(newEvent)) {
                 updated++;
             }
+
+            calendarIDs[calendarEvent.id] = true;
         }
 
-        // Remove events missing from the the calendar
+        // Remove existing events that were not just selected from the calendar
         this.events = this.events.filter((e) => {
-            for(var i = 0; i < calendar.length; i++) {
-                var calendarEvent = calendar[i];
-                if(calendarEvent.id == e.bangleCalendarEventId) {
-                    return true;
-                }
-            }
-            return false;
+            return (e.calendarEventId && calendarIDs[e.calendarEventId])
         });
 
-        this.dedupEvents();
-        this.sortEvents();
+        this.dedup();
+        this.sort();
         this.selectUpcomingEvent();
 
         return updated;
+    }
+
+    private sort() {
+        this.events = this.events.sort((e1, e2) => {
+            return e1.endTime.unixTimestampMillis() - e2.endTime.unixTimestampMillis();
+        });
+    }
+
+    private dedup() {
+        for(var i = 0; i < this.events.length; i++) {
+            var e = this.events[i];
+            if(!e) {
+                continue;
+            }
+            for(var j = i+1; j < this.events.length; j++) {
+                var e2 = this.events[j];
+                if(!e2) continue;
+                if(e.name == e2.name && e.startTime.date.getTime() == e2.startTime.date.getTime() && e.endTime.date.getTime() == e2.endTime.date.getTime()) {
+                    this.events.splice(j, 1);
+                    j--;
+                }
+            }
+        }
     }
 
     public upsertEvent(event: CalendarEvent): boolean {
@@ -206,37 +220,12 @@ export class CalendarEvents {
             if(!e) {
                 continue;
             }
-            if(e.bangleCalendarEventId == event.bangleCalendarEventId) {
+            if(e.calendarEventId == event.calendarEventId) {
                 return e.update(event);
             }
         }
         this.events.push(event);
         return true;
-    }
-
-    public sortEvents() {
-        this.events = this.events.sort((e1, e2) => {
-            return e1.endTime.unixTimestampMillis() - e2.endTime.unixTimestampMillis();
-        });
-    }
-
-    public dedupEvents() {
-        for(var i = 0; i < this.events.length; i++) {
-            var e = this.events[i];
-            if(!e) {
-                continue;
-            }
-            for(var j = i+1; j < this.events.length; j++) {
-                var e2 = this.events[j];
-                if(!e2) {
-                    continue;
-                }
-                if(e.name == e2.name && e.startTime.date.getTime() == e2.startTime.date.getTime() && e.endTime.date.getTime() == e2.endTime.date.getTime()) {
-                    this.events.splice(j, 1);
-                    j--;
-                }
-            }
-        }
     }
 
     public selectEvent(event: CalendarEvent) {
@@ -247,6 +236,11 @@ export class CalendarEvents {
                 return this.getSelectedEvent();
             }
         }
+        return this.getSelectedEvent();
+    }
+
+    public selectUpcomingEvent(): CalendarEvent {
+        this.selectedEvent = this.getUpcomingEventIndex();
         return this.getSelectedEvent();
     }
 
@@ -267,11 +261,6 @@ export class CalendarEvents {
         }
 
         return soonestEventIndex;
-    }
-
-    public selectUpcomingEvent(): CalendarEvent {
-        this.selectedEvent = this.getUpcomingEventIndex();
-        return this.getSelectedEvent();
     }
 
     public selectNextEvent() {
@@ -317,9 +306,5 @@ export class CalendarEvents {
             clearTimeout(this.refocusTimeout);
         }
         this.refocusTimeout = undefined;
-    }
-
-    public hasEvents() {
-        return this.events.length > 0
     }
 }

@@ -1,13 +1,9 @@
 import { ClockFace } from './clockface';
 import { CalendarUpdater } from './calendarupdate';
 import { EventDate } from "./date";
-import { CalendarEvents, CalendarEvent } from './calendarevents';
+import { CalendarEvents } from './calendarevents';
 import { setupBangleEvents } from './bangleevents';
 import { reportEvent } from './util';
-
-require("Font7x11Numeric7Seg").add(Graphics);
-
-reportEvent("--app started-----");
 
 (function() {
     var originalGB = global.GB;
@@ -31,31 +27,30 @@ reportEvent("--app started-----");
     };
 })();
 
-var eventsObj = new CalendarEvents([]).restore();
-// var testevent = new CalendarEvent("test", "", new EventDate("2022-11-19", "05:13pm"), new EventDate("2022-11-19", "5:30pm"))
-// eventsObj.addEvent(testevent);
+function main() {
+    reportEvent("--app started-----");
 
-var clockFace = new ClockFace(eventsObj);
+    var eventsObj = new CalendarEvents([]).restore();
+    // var testevent = new CalendarEvent("test", "", new EventDate("2022-11-19", "05:13pm"), new EventDate("2022-11-19", "5:30pm"))
+    // eventsObj.addEvent(testevent);
 
-setTimeout(function() {
-    (new CalendarUpdater(clockFace, eventsObj)).readCalendarDataAndUpdate();
-}, 10);
+    var clockFace = new ClockFace(eventsObj);
 
-if(!eventsObj.hasEvents()) {
-    var now = new EventDate();
-    now.addMinutes(60);
-    now.floorMinutes();
-    eventsObj.upsertEvent(new CalendarEvent("next hour", "", now, now));
+    setTimeout(function() {
+        (new CalendarUpdater(clockFace, eventsObj)).readCalendarDataAndUpdate();
+    }, 10);
+
+    eventsObj.selectUpcomingEvent();
+
+    Bangle.setUI("clock");
+    Bangle.loadWidgets();
+    Bangle.drawWidgets();
+    clockFace.redrawAll();
+
+    setupBangleEvents(clockFace, eventsObj);
+
+    // Put this in ide to send a test message
+    // GB({"t": "calendar","id": 36,"type": 0,"timestamp": 1665892800,"durationInSeconds": 1800,"title": "Zzz","description": "","location": "","calName": "aaronszymanski@gmail.com/BangleJS","color": -4989844,"allDay": false})
 }
 
-eventsObj.selectUpcomingEvent();
-
-Bangle.setUI("clock");
-Bangle.loadWidgets();
-Bangle.drawWidgets();
-clockFace.redrawAll();
-
-setupBangleEvents(clockFace, eventsObj);
-
-// Put this in ide to send a test message
-// GB({"t": "calendar","id": 36,"type": 0,"timestamp": 1665892800,"durationInSeconds": 1800,"title": "Zzz","description": "","location": "","calName": "aaronszymanski@gmail.com/BangleJS","color": -4989844,"allDay": false})
+main();

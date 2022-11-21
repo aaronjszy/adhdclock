@@ -46,7 +46,6 @@ export class CalendarUpdater {
     
     public readCalendarDataAndUpdate() {
         reportEvent("readCalendarDataAndUpdate");
-        this.events.removeExpiredEvents();
         this.forceCalendarSync();
 
         var calendarJSON = require("Storage").readJSON("android.calendar.json",true);
