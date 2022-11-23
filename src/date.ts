@@ -73,16 +73,14 @@ export class EventDate {
 
     timeRemainingAsString(): string {
         var secondsUntil = this.secondsUntil();
-        var sign = (secondsUntil < 0) ? "-" : "";
-        var secondsUntilAbs = Math.abs(secondsUntil)
-        var totalMinutesToEventAbs = Math.floor(secondsUntilAbs / 60);
-        var hoursToEventAbs = Math.floor(totalMinutesToEventAbs / 60);
-        var minutesToEventAbs = totalMinutesToEventAbs % 60;
-
-        if(hoursToEventAbs == 0) {
-            return `${sign}${minutesToEventAbs}`
+        var totalMinutesToEvent = Math.ceil(secondsUntil / 60);
+        var sign = (totalMinutesToEvent < 0) ? "-" : "";
+        var hoursToEventAbs = Math.floor(Math.abs(totalMinutesToEvent) / 60);
+        var minutesToEventAbs = Math.abs(totalMinutesToEvent % 60);
+        if (hoursToEventAbs == 0) {
+            return `${sign}${minutesToEventAbs}`;
         } else {
-            return `${sign}${hoursToEventAbs}:${zeroPad(minutesToEventAbs)}`
+            return `${sign}${hoursToEventAbs}:${zeroPad(minutesToEventAbs)}`;
         }
     }
 

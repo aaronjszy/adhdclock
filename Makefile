@@ -44,7 +44,7 @@ openbrowser:
 upload: COMMAND=espruino -d "Bangle.js cd9f" "./$(BUILDDIR)/$(APPFILE)" --storage $(APPFILE):-
 upload: retry
 
-uploadandwatch: COMMAND=espruino -d "Bangle.js cd9f" -w "$(BUILDDIR)/$(APPFILE)" --storage $(APPFILE):-
+uploadandwatch: COMMAND=espruino -d "Bangle.js cd9f" -w "$(BUILDDIR)/bundle.js" --storage $(APPFILE):-
 uploadandwatch: retry
 
 downloadevents: FILE=adhdclock.events

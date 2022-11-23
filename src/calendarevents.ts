@@ -133,17 +133,25 @@ export class CalendarEvents {
     }
 
     public restore(): CalendarEvents {
-        var file = require("Storage").open("adhdclock.events","r");
-        if(file) {
-            var data = file.read(file.getLength());
-            if(data) {
-                var restoredObject = JSON.parse(data);
-                this.selectedEvent = restoredObject.selectedEvent;
-                this.events = []
-                for(var i = 0; i < restoredObject.events.length; i++) {
-                    this.events[i] = CalendarEvent.fromJSON(restoredObject.events[i]);
+        try {
+            var file = require("Storage").open("adhdclock.events","r");
+            if(file) {
+                var data = file.read(file.getLength());
+                if(data) {
+                    var restoredObject = JSON.parse(data);
+                    this.events = []
+                    if(restoredObject.events) {
+                        for(var i = 0; i < restoredObject.events.length; i++) {
+                            this.events[i] = CalendarEvent.fromJSON(restoredObject.events[i]);
+                        }
+                        if(restoredObject.selectedEvent) {
+                            this.selectedEvent = restoredObject.selectedEvent;
+                        }
+                    }
                 }
             }
+        } catch(e) {
+            console.log("Error restoring calendar events: " + e);
         }
         return this
     }
