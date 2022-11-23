@@ -73,7 +73,7 @@ export class EventDate {
 
     timeRemainingAsString(): string {
         var secondsUntil = this.secondsUntil();
-        var totalMinutesToEvent = Math.ceil(secondsUntil / 60);
+        var totalMinutesToEvent = Math.floor(secondsUntil / 60);
         var sign = (totalMinutesToEvent < 0) ? "-" : "";
         var hoursToEventAbs = Math.floor(Math.abs(totalMinutesToEvent) / 60);
         var minutesToEventAbs = Math.abs(totalMinutesToEvent % 60);

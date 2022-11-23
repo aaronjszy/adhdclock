@@ -45,7 +45,7 @@ function main() {
     setupBangleEvents(clockFace, eventsObj);
 
     // Put this in ide to send a test message
-    // GB({"t": "calendar","id": 1234,"type": 0,"timestamp": Math.floor(new Date().getTime()/1000)+20,"durationInSeconds": 1800,"title": "Test","description": "","allDay": false})
+    // GB({"t": "calendar","id": 1234,"type": 0,"timestamp": Math.floor(new Date().getTime()/1000)+65,"durationInSeconds": 1800,"title": "Test","description": "","allDay": false})
     // GB({"t": "calendar-","id": 1234})
 }
 
