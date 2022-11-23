@@ -1,5 +1,4 @@
 import { ClockFace } from './clockface';
-import { CalendarUpdater } from './calendarupdate';
 import { CalendarEvents } from './calendarevents';
 
 export function setupBangleEvents(clockFace: ClockFace, eventsObj: CalendarEvents) {
