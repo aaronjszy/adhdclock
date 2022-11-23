@@ -5,36 +5,31 @@ import { CalendarEvents } from './calendarevents';
 import { setupBangleEvents } from './bangleevents';
 import { reportEvent } from './util';
 
-(function() {
+function main() {
+    reportEvent("--app started-----");
+
+    var eventsObj = new CalendarEvents([]).restore();
+    var clockFace = new ClockFace(eventsObj);
+
     var originalGB = global.GB;
     global.GB = function(j: any) {
       switch (j.t) {
         case "calendar":
             reportEvent("+" + j.id + ": " + j.title + " " + new EventDate(j.timestamp*1000).string());
+            eventsObj.addCalendarEvent(j);
+            eventsObj.organize();
+            clockFace.redrawAll();
             break;
         case "calendar-":
             reportEvent("-" + j.id);
-            break;
-        case "calendarevents":
-            reportEvent("calendarevents: " + JSON.stringify(j.events, undefined, undefined));
-            break;
-        case "force_calendar_sync_start":
-            reportEvent("force_calendar_sync_start");
+            eventsObj.removeCalendarEvent(j.id);
+            eventsObj.organize();
+            clockFace.redrawAll();
             break;
       }
       
       if (originalGB) originalGB(j);
     };
-})();
-
-function main() {
-    reportEvent("--app started-----");
-
-    var eventsObj = new CalendarEvents([]).restore();
-    // var testevent = new CalendarEvent("test", "", new EventDate("2022-11-19", "05:13pm"), new EventDate("2022-11-19", "5:30pm"))
-    // eventsObj.addEvent(testevent);
-
-    var clockFace = new ClockFace(eventsObj);
 
     setTimeout(function() {
         (new CalendarUpdater(clockFace, eventsObj)).readCalendarDataAndUpdate();
@@ -50,7 +45,8 @@ function main() {
     setupBangleEvents(clockFace, eventsObj);
 
     // Put this in ide to send a test message
-    // GB({"t": "calendar","id": 36,"type": 0,"timestamp": 1665892800,"durationInSeconds": 1800,"title": "Zzz","description": "","location": "","calName": "aaronszymanski@gmail.com/BangleJS","color": -4989844,"allDay": false})
+    // GB({"t": "calendar","id": 1234,"type": 0,"timestamp": Math.floor(new Date().getTime()/1000)+20,"durationInSeconds": 1800,"title": "Test","description": "","allDay": false})
+    // GB({"t": "calendar-","id": 1234})
 }
 
 main();

@@ -61,26 +61,33 @@ export class CalendarEvent {
 
     public toggleSkip(): boolean {
         this.skipped = !this.skipped;
-        return this.skipped
+        return this.skipped;
     }
 
     public toggleTrackedEventBoundary() {
-        this.trackedEventBoundary = (this.trackedEventBoundary == TrackedEventBoundary.END) ? TrackedEventBoundary.START : TrackedEventBoundary.END;
+        if(this.eventStartElapsed()) {
+            this.trackedEventBoundary = TrackedEventBoundary.END;
+        } else {
+            this.trackedEventBoundary = (this.trackedEventBoundary == TrackedEventBoundary.END) ? TrackedEventBoundary.START : TrackedEventBoundary.END;
+        }
     }
 
     public getTrackedEventBoundary(): TrackedEventBoundary {
-        // Change the tracked event event boundary from start to end if the start time has already elapsed
-        // if(this.trackedEventBoundary == TrackedEventBoundary.START && this.startTime.secondsUntil() < 0) {
-        //     this.trackedEventBoundary = TrackedEventBoundary.END
-        // }
+        if(this.eventStartElapsed()) {
+            this.trackedEventBoundary = TrackedEventBoundary.END;
+        }
         return this.trackedEventBoundary;
     }
 
     public getTrackedEventDate(): date.EventDate {
-        if(this.trackedEventBoundary == TrackedEventBoundary.START) {
+        if(this.getTrackedEventBoundary() == TrackedEventBoundary.START) {
             return this.startTime;
         }
         return this.endTime;
+    }
+
+    private eventStartElapsed(): boolean {
+        return this.startTime.secondsUntil() <= 0;
     }
 
     public displayName(): string {
@@ -157,34 +164,11 @@ export class CalendarEvents {
     }
 
     public updateFromCalendar(calendar: any) {
-        var updated = 0;
-        var now = new Date();
-        var eventTimeWindowMillis = 1000*60*60*24; // 24 hours
-
         let calendarIDs: { [name: string]: boolean } = {};
-        
         for(var i = 0; i < calendar.length; i++) {
-            var calendarEvent = calendar[i];
-            var calStartEventTimeMillis = calendarEvent.timestamp*1000;
-            var calEndEventTimeMillis = (calendarEvent.timestamp+calendarEvent.durationInSeconds)*1000;
-
-            // Calendar event is within 24 hours of the current time
-            if (calEndEventTimeMillis > (now.getTime()+eventTimeWindowMillis) || calEndEventTimeMillis < (now.getTime()-eventTimeWindowMillis))
-                continue;
-            // Ignore events without required fields / values
-            if(calendarEvent.t != "calendar" || !calendarEvent.title || calendarEvent.title == "" || calendarEvent.type != 0)
-                continue;
-            // Ignore all day events
-            if(calendarEvent.allDay || calendarEvent.durationInSeconds == 86400)
-                continue;
-
-            var newEvent = new CalendarEvent(calendarEvent.title, calendarEvent.description, new date.EventDate(calStartEventTimeMillis), new date.EventDate(calEndEventTimeMillis));
-            newEvent.setBangleCalendarEventId(calendarEvent.id);
-            if(this.upsertEvent(newEvent)) {
-                updated++;
+            if(this.addCalendarEvent(calendar[i])) {
+                calendarIDs[calendar[i].id] = true;
             }
-
-            calendarIDs[calendarEvent.id] = true;
         }
 
         // Remove existing events that were not just selected from the calendar
@@ -192,11 +176,43 @@ export class CalendarEvents {
             return (e.calendarEventId && calendarIDs[e.calendarEventId])
         });
 
+        this.organize();
+    }
+
+    public addCalendarEvent(calendarEvent: any): boolean {
+        var now = new Date();
+        var eventTimeWindowMillis = 1000*60*60*24; // 24 hours
+
+        var calStartEventTimeMillis = calendarEvent.timestamp*1000;
+        var calEndEventTimeMillis = (calendarEvent.timestamp+calendarEvent.durationInSeconds)*1000;
+
+        // Calendar event is within 24 hours of the current time
+        if (calEndEventTimeMillis > (now.getTime()+eventTimeWindowMillis) || calEndEventTimeMillis < (now.getTime()-eventTimeWindowMillis))
+            return false;
+        // Ignore events without required fields / values
+        if(calendarEvent.t != "calendar" || !calendarEvent.title || calendarEvent.title == "" || calendarEvent.type != 0)
+            return false;
+        // Ignore all day events
+        if(calendarEvent.allDay || calendarEvent.durationInSeconds == 86400)
+            return false;
+
+        var newEvent = new CalendarEvent(calendarEvent.title, calendarEvent.description, new date.EventDate(calStartEventTimeMillis), new date.EventDate(calEndEventTimeMillis));
+        newEvent.setBangleCalendarEventId(calendarEvent.id);
+        this.upsertEvent(newEvent);
+
+        return true;
+    }
+
+    public removeCalendarEvent(eventID: number) {
+        this.events = this.events.filter((e) => {
+            return e.calendarEventId != eventID;
+        });
+    }
+
+    public organize() {
         this.dedup();
         this.sort();
         this.selectUpcomingEvent();
-
-        return updated;
     }
 
     private sort() {
