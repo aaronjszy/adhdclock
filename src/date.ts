@@ -56,6 +56,14 @@ export class EventDate {
         return this.date.getTime();
     }
 
+    millisSinceMidnight(): number {
+        return this.date.getTime() - new Date(this.date.getFullYear(), this.date.getMonth(), this.date.getDate()).getTime();
+    }
+
+    dateStr(): string {
+        return this.date.getFullYear() + "-" + zeroPad(this.date.getMonth()+1) + "-" + zeroPad(this.date.getDate());
+    }
+
     millisUntil(): number {
         var now = new Date();
         return this.date.getTime()-now.getTime();

@@ -1,4 +1,5 @@
 import * as date from "./date";
+import { Alarm } from "./alarm";
 
 export enum TrackedEventBoundary {
     START,
@@ -6,40 +7,54 @@ export enum TrackedEventBoundary {
 }
 
 export class CalendarEvent {
-    calendarEventId: number | undefined;
+    id: number;
     name: string;
     description: string;
     startTime: date.EventDate;
     endTime: date.EventDate;
     skipped: boolean;
     trackedEventBoundary: TrackedEventBoundary;
+    startEventAlarm: Alarm;
 
-    constructor(name: string, description: string, startTime: date.EventDate, endTime: date.EventDate) {
+    constructor(id: number, name: string, description: string, startTime: date.EventDate, endTime: date.EventDate) {
+        this.id = id;
         this.name = name;
         this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
         this.skipped = false;
-        this.calendarEventId = undefined;
         this.trackedEventBoundary = TrackedEventBoundary.END;
+        this.startEventAlarm = new Alarm(id, this.name, this.startTime);
+    }
+
+    public registerAlarm(): CalendarEvent {
+        this.startEventAlarm.register();
+        return this;
+    }
+
+    public unregisterAlarm(): void {
+        this.startEventAlarm.unregister();
     }
 
     public static fromJSON(json: any): CalendarEvent {
-        var e = new CalendarEvent(json.name, json.description, new date.EventDate(json.startTime.date), new date.EventDate(json.endTime.date))
-        e.skipped = json.skipped
-        e.calendarEventId = json.calendarEventId
-        e.trackedEventBoundary = json.trackedEventBoundary
+        var e = new CalendarEvent(json.id, json.name, json.description, new date.EventDate(json.startTime.date), new date.EventDate(json.endTime.date))
+        e.skipped = json.skipped;
+        e.trackedEventBoundary = json.trackedEventBoundary;
+
+        // Not explicitly registering the alarm here, this would have already been handled when the event was originally created.
+        // this ensures that we dont mistakenly register alarms for anything that should not have an alarm.
+
         return e
     }
 
     public update(event: CalendarEvent): boolean {
         // This check is here just in case the provided event is not the same as this event. This should not happen.
-        if(event.calendarEventId != this.calendarEventId) {
+        if(event.id != this.id) {
             return false;
         }
 
         // set equivalent event properties for fields we dont want included in the isModified check
-        event.calendarEventId = this.calendarEventId;
+        event.id = this.id;
         event.skipped = this.skipped;
         event.trackedEventBoundary = this.trackedEventBoundary;
 
@@ -53,10 +68,6 @@ export class CalendarEvent {
         this.endTime = event.endTime;
 
         return isModified;
-    }
-
-    public setBangleCalendarEventId(calendarEventId: number) {
-        this.calendarEventId = calendarEventId;
     }
 
     public toggleSkip(): boolean {
@@ -173,7 +184,7 @@ export class CalendarEvents {
 
         // Remove existing events that were not just selected from the calendar
         this.events = this.events.filter((e) => {
-            return (e.calendarEventId && calendarIDs[e.calendarEventId])
+            return (e.id && calendarIDs[e.id])
         });
 
         this.organize();
@@ -196,8 +207,13 @@ export class CalendarEvents {
         if(calendarEvent.allDay || calendarEvent.durationInSeconds == 86400)
             return false;
 
-        var newEvent = new CalendarEvent(calendarEvent.title, calendarEvent.description, new date.EventDate(calStartEventTimeMillis), new date.EventDate(calEndEventTimeMillis));
-        newEvent.setBangleCalendarEventId(calendarEvent.id);
+        var newEvent = new CalendarEvent(
+            calendarEvent.id, 
+            calendarEvent.title, 
+            calendarEvent.description, 
+            new date.EventDate(calStartEventTimeMillis), 
+            new date.EventDate(calEndEventTimeMillis)
+        ).registerAlarm();
         this.upsertEvent(newEvent);
 
         return true;
@@ -205,7 +221,11 @@ export class CalendarEvents {
 
     public removeCalendarEvent(eventID: number) {
         this.events = this.events.filter((e) => {
-            return e.calendarEventId != eventID;
+            var isMatch = e.id == eventID;
+            if(isMatch) {
+                e.unregisterAlarm();
+            }
+            return !isMatch;
         });
     }
 
@@ -231,6 +251,12 @@ export class CalendarEvents {
                 var e2 = this.events[j];
                 if(!e2) continue;
                 if(e.name == e2.name && e.startTime.date.getTime() == e2.startTime.date.getTime() && e.endTime.date.getTime() == e2.endTime.date.getTime()) {
+                    // only unregister the alarm for the duplicate event if it has a unique id
+                    // otherwise we will unregister the alarm for the original event
+                    if(e.id != e2.id) {
+                        e2.unregisterAlarm();
+                    }
+
                     this.events.splice(j, 1);
                     j--;
                 }
@@ -244,7 +270,7 @@ export class CalendarEvents {
             if(!e) {
                 continue;
             }
-            if(e.calendarEventId == event.calendarEventId) {
+            if(e.id == event.id) {
                 return e.update(event);
             }
         }
@@ -309,10 +335,10 @@ export class CalendarEvents {
             if(calendarEvent) {
                 return calendarEvent;
             } else {
-                return new CalendarEvent("undefined", "", new date.EventDate(), new date.EventDate());
+                return new CalendarEvent(0, "undefined", "", new date.EventDate(), new date.EventDate());
             }
         } else {
-            return new CalendarEvent("No events", "", new date.EventDate(), new date.EventDate());
+            return new CalendarEvent(0, "No events", "", new date.EventDate(), new date.EventDate());
         }
     }
 
