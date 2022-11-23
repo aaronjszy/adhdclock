@@ -11,20 +11,6 @@ export class CalendarUpdater {
         this.events = events;
     }
 
-    public userForceCalendarUpdateEvent() {
-        if(NRF.getSecurityStatus().connected) {
-            reportEvent("userForceCalendarUpdateEvent");
-            this.forceCalendarSync();
-            E.showAlert("Request sent to the phone").then(()=>{
-                this.clockFace.redrawAll();
-            });
-        } else {
-            E.showAlert("You are not connected").then(()=>{
-                this.clockFace.redrawAll()
-            });
-        }
-    }
-
     public forceCalendarSync() {
         if(NRF.getSecurityStatus().connected) {
             reportEvent("forceCalendarSync");
@@ -55,7 +41,6 @@ export class CalendarUpdater {
                     this.clockFace.redrawAll();
                 });
             });
-            return;
         } else {
             this.events.updateFromCalendar(calendarJSON);
             this.clockFace.redrawAll();

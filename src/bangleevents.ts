@@ -29,9 +29,6 @@ export function setupBangleEvents(clockFace: ClockFace, eventsObj: CalendarEvent
                 }, 200);
             }
         }
-        if(directionUD == 1 && directionLR == 0) {
-            (new CalendarUpdater(clockFace, eventsObj)).userForceCalendarUpdateEvent();
-        }
     });
 
     var ignoreTouch = false;
