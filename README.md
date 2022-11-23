@@ -20,7 +20,9 @@ require("Storage").write("adhdclock.info",{
 ```
 
 ## TODO
+  - Autoselect events when their alarms fire
   - Create a better solution for when there are no events or no upcoming events - maybe a special event that always sorts to the end that just shows the time
+    - Also might be good to show it when its a long time to the next event
   - When the timer is within x minutes, show seconds
   - Replace EventDate with Date and a custom date class with static methods
   - Use layout instead of what im doing now: https://www.espruino.com/Bangle.js+Layout

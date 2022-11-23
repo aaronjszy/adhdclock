@@ -34,16 +34,18 @@ export class Alarm {
         // would reload, the alarm would be re-registered, and the alarm 
         // would go off again and again within the same minute
         if(this.date.millisUntil() > 0) {
-            require("sched").setAlarm(this.alarmDef.id, this.alarmDef);
-            require("sched").reload();
+            const sched = require("sched")
+            sched.setAlarm(this.alarmDef.id, this.alarmDef);
+            sched.reload();
         }
         return this;
     }
 
     public unregister() {
         console.log("unregistering alarm " + this.alarmDef.id);
-        require("sched").setAlarm(this.alarmDef.id, undefined);
-        require("sched").reload();
+        const sched = require("sched")
+        sched.setAlarm(this.alarmDef.id, undefined);
+        sched.reload();
     }
 
     // require("sched").getAlarms().filter((a) => (a.appid == "adhdclock"));
