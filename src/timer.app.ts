@@ -33,7 +33,11 @@ function main() {
 
     setTimeout(function() {
         (new CalendarUpdater(clockFace, eventsObj)).readCalendarDataAndUpdate();
-    }, 10);
+    }, 1000*10); // After 10 seconds
+
+    setInterval(function() {
+        (new CalendarUpdater(clockFace, eventsObj)).readCalendarDataAndUpdate();
+    }, 1000*60*60) // Hourly
 
     eventsObj.selectUpcomingEvent();
 
