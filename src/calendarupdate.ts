@@ -32,7 +32,11 @@ export class CalendarUpdater {
     
     public readCalendarDataAndUpdate() {
         reportEvent("readCalendarDataAndUpdate");
-        this.forceCalendarSync();
+        
+        // TODO commented this out since im not convinced it helps us
+        // reading all the calendar data is expensive so unless we know it helps
+        // im not going to do it
+        //this.forceCalendarSync();
 
         var calendarJSON = require("Storage").readJSON("android.calendar.json",true);
         if(!calendarJSON) {
