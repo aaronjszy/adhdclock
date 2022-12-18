@@ -19,8 +19,7 @@ export class Alarm {
             hidden: true,
             del: true,
             as: false,
-            // js: "load('myapp.js')" // a JS command to execute when the alarm activates (*instead* of loading 'sched.js')
-                                        // when this code is run, you're responsible for setting alarm.on=false (or removing the alarm)
+            js: "load('sched.js')"
         };
     }
 

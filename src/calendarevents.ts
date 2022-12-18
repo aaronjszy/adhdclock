@@ -289,7 +289,7 @@ export class CalendarEvents {
         return this.getSelectedEvent();
     }
 
-    public selectUpcomingEvent(): CalendarEvent {
+    public selectUpcomingEvent(): CalendarEvent | undefined {
         this.selectedEvent = this.getUpcomingEventIndex();
         return this.getSelectedEvent();
     }
@@ -329,17 +329,14 @@ export class CalendarEvents {
         return this.getSelectedEvent();
     }
 
-    public getSelectedEvent(): CalendarEvent {
+    public getSelectedEvent(): CalendarEvent | undefined {
         if(this.events.length > 0) {
             var calendarEvent = this.events[this.selectedEvent];
             if(calendarEvent) {
                 return calendarEvent;
-            } else {
-                return new CalendarEvent(0, "undefined", "", new date.EventDate(), new date.EventDate());
             }
-        } else {
-            return new CalendarEvent(0, "No events", "", new date.EventDate(), new date.EventDate());
         }
+        return undefined;
     }
 
     public setRefocusTimeout() {

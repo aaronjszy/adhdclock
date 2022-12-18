@@ -19,13 +19,15 @@ export function setupBangleEvents(clockFace: ClockFace, eventsObj: CalendarEvent
         }
         if(directionUD == -1 && directionLR == 0) {
             var e = eventsObj.getSelectedEvent();
-            var skipped = e.toggleSkip();
-            clockFace.redrawAll();
-            if(skipped) {
-                setTimeout(()=>{
-                    eventsObj.selectUpcomingEvent()
-                    clockFace.redrawAll();    
-                }, 200);
+            if(e) {
+                var skipped = e.toggleSkip();
+                clockFace.redrawAll();
+                if(skipped) {
+                    setTimeout(()=>{
+                        eventsObj.selectUpcomingEvent()
+                        clockFace.redrawAll();    
+                    }, 200);
+                }
             }
         }
     });
@@ -44,7 +46,10 @@ export function setupBangleEvents(clockFace: ClockFace, eventsObj: CalendarEvent
         // Bottom bar
         if(xy.y > g.getHeight() - 50) {
             // Toggle countdown between event start and event end
-            eventsObj.getSelectedEvent().toggleTrackedEventBoundary();
+            var e = eventsObj.getSelectedEvent();
+            if(e) {
+                e.toggleTrackedEventBoundary();
+            }
 
             // Redraw to show the updated state
             clockFace.redrawAll();
@@ -55,12 +60,15 @@ export function setupBangleEvents(clockFace: ClockFace, eventsObj: CalendarEvent
             // Display event details
             // Deploy the prompt so we dont immediately get a touch event that clicks the ok button
             setTimeout(()=>{
-                E.showPrompt(eventsObj.getSelectedEvent().displayDescription(), {
-                    buttons: {Ok: 1}
-                }).then(()=>{
-                    ignoreTouch = false;
-                    clockFace.redrawAll();
-                });
+                var e = eventsObj.getSelectedEvent();
+                if(e) {
+                    E.showPrompt(e.displayDescription(), {
+                        buttons: {Ok: 1}
+                    }).then(()=>{
+                        ignoreTouch = false;
+                        clockFace.redrawAll();
+                    });
+                }
             }, 200);
         }
     });

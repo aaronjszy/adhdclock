@@ -24,7 +24,7 @@ build-rollup:
 	rollup ./$(BUILDDIR)/tsout/timer.app.js --file ./$(BUILDDIR)/bundle.js --format cjs
 
 build-uglify:
-	uglifyjs  --compress --mangle --toplevel ./$(BUILDDIR)/bundle.js -o ./$(BUILDDIR)/$(APPFILE)
+	uglifyjs --compress --mangle --toplevel ./$(BUILDDIR)/bundle.js -o ./$(BUILDDIR)/$(APPFILE)
 
 # ---espruino targets--------------------------------------
 
@@ -32,7 +32,6 @@ download: COMMAND=espruino -d "Bangle.js cd9f" --download "$(FILE)"
 download: retry
 	mkdir -p $(BUILDDIR)/$(DOWNLOADDIR)
 	mv $(FILE) $(BUILDDIR)/$(DOWNLOADDIR)/$(FILE)
-# cat "$(FILE)" | jq . | sponge "$(FILE)"
 
 watch: build uploadandwatch
 
@@ -44,8 +43,16 @@ openbrowser:
 upload: COMMAND=espruino -d "Bangle.js cd9f" "./$(BUILDDIR)/$(APPFILE)" --storage $(APPFILE):-
 upload: retry
 
-uploadandwatch: COMMAND=espruino -d "Bangle.js cd9f" -w "$(BUILDDIR)/bundle.js" --storage $(APPFILE):-
+uploadandwatch: COMMAND=espruino -d "Bangle.js cd9f" -w "$(BUILDDIR)/$(APPFILE)" --storage $(APPFILE):-
 uploadandwatch: retry
+
+retry:
+	until $(COMMAND); do    \
+		echo "Retrying..."; \
+		sleep 1;            \
+	done
+
+# -- Download From Watch -------------------------
 
 downloadevents: FILE=adhdclock.events
 downloadevents: download
@@ -62,8 +69,17 @@ downloadlog: download
 
 downloadall: downloadevents downloadcalendar downloadapp
 
-retry:
-	until $(COMMAND); do    \
-		echo "Retrying..."; \
-		sleep 1;            \
-	done
+
+# -- Offline -------------------------
+#     --config "MODULE_URL=http://localhost:8080" 
+
+downloadbuildfiles:
+	curl --fail http://www.espruino.com/json/BANGLEJS2.json > remotefiles/BANGLEJS2.json
+	curl --fail https://www.espruino.com/modules/FontDennis8.min.js > remotefiles/FontDennis8.min.js
+	curl --fail https://raw.githubusercontent.com/espruino/BangleApps/master/apps/sched/sched.js > remotefiles/sched.js
+
+startfileserver: stopfileserver
+	python -m http.server 8080 --bind 127.0.0.1 --directory remotefiles &
+
+stopfileserver:
+	ps -x | grep -v grep | grep "python -m http.server 8080" | cut  -d" " -f1 | xargs kill

@@ -1,0 +1,852 @@
+{
+ "info": {
+  "name": "Bangle.js 2",
+  "link": [
+   "https://espruino.com/Bangle.js2"
+  ],
+  "espruino_page_link": "Bangle.js2",
+  "default_console": "EV_TERMINAL",
+  "variables": 12000,
+  "io_buffer_size": 512,
+  "bootloader": 1,
+  "binary_name": "espruino_%v_banglejs2.hex",
+  "build": {
+   "optimizeflags": "-Os",
+   "libraries": [
+    "BLUETOOTH",
+    "TERMINAL",
+    "GRAPHICS",
+    "CRYPTO",
+    "SHA256",
+    "SHA512",
+    "LCD_MEMLCD",
+    "TENSORFLOW",
+    "JIT"
+   ],
+   "makefile": [
+    "DEFINES += -DESPR_HWVERSION=2 -DBANGLEJS -DBANGLEJS_Q3",
+    "DEFINES += -DCONFIG_NFCT_PINS_AS_GPIOS",
+    "DEFINES += -DESPR_LSE_ENABLE",
+    "DEFINES += -DNRF_SDH_BLE_GATT_MAX_MTU_SIZE=131",
+    "LDFLAGS += -Xlinker --defsym=LD_APP_RAM_BASE=0x2ec0",
+    "DEFINES += -DESPR_DCDC_ENABLE=1",
+    "ESPR_BLUETOOTH_ANCS=1",
+    "DEFINES += -DSPIFLASH_SLEEP_CMD",
+    "DEFINES += -DAPP_TIMER_OP_QUEUE_SIZE=6",
+    "DEFINES+=-DBLUETOOTH_NAME_PREFIX='\"Bangle.js\"'",
+    "DEFINES+=-DCUSTOM_GETBATTERY=jswrap_banglejs_getBattery",
+    "DEFINES+=-DDUMP_IGNORE_VARIABLES='\"g\\0\"'",
+    "DEFINES+=-DESPR_GRAPHICS_INTERNAL=1",
+    "DEFINES+=-DESPR_BATTERY_FULL_VOLTAGE=0.3144",
+    "DEFINES+=-DUSE_FONT_6X8 -DGRAPHICS_PALETTED_IMAGES -DGRAPHICS_ANTIALIAS",
+    "DEFINES+=-DNO_DUMP_HARDWARE_INITIALISATION",
+    "DEFINES += -DESPR_NO_LINE_NUMBERS=1",
+    "INCLUDE += -I$(ROOT)/libs/banglejs -I$(ROOT)/libs/misc",
+    "WRAPPERSOURCES += libs/banglejs/jswrap_bangle.c",
+    "WRAPPERSOURCES += libs/graphics/jswrap_font_6x15.c",
+    "WRAPPERSOURCES += libs/graphics/jswrap_font_12x20.c",
+    "SOURCES += libs/misc/nmea.c",
+    "SOURCES += libs/misc/stepcount.c",
+    "SOURCES += libs/misc/heartrate.c",
+    "SOURCES += libs/misc/hrm_vc31.c",
+    "SOURCES += libs/misc/unistroke.c",
+    "WRAPPERSOURCES += libs/misc/jswrap_unistroke.c",
+    "DEFINES += -DESPR_BANGLE_UNISTROKE=1",
+    "SOURCES += libs/banglejs/banglejs2_storage_default.c",
+    "DEFINES += -DESPR_STORAGE_INITIAL_CONTENTS=1",
+    "DEFINES += -DESPR_USE_STORAGE_CACHE=32",
+    "JSMODULESOURCES += libs/js/banglejs/locale.min.js",
+    "DFU_SETTINGS=--application-version 0xff --hw-version 52 --sd-req 0xa9,0xae,0xb6",
+    "DFU_PRIVATE_KEY=targets/nrf5x_dfu/dfu_private_key.pem",
+    "DEFINES += -DNRF_BOOTLOADER_NO_WRITE_PROTECT=1",
+    "DEFINES += -DBUTTONPRESS_TO_REBOOT_BOOTLOADER",
+    "BOOTLOADER_SETTINGS_FAMILY=NRF52840",
+    "DEFINES += -DESPR_BOOTLOADER_SPIFLASH",
+    "NRF_SDK15=1"
+   ]
+  },
+  "image_url": "http://www.espruino.com/img/BANGLEJS2.jpg",
+  "thumb_url": "http://www.espruino.com/img/BANGLEJS2_thumb.jpg",
+  "binary_version": "2v16",
+  "binary_url": "http://www.espruino.com/binaries/espruino_2v16_banglejs2.hex",
+  "builtin_modules": [
+   "Flash",
+   "Storage",
+   "heatshrink",
+   "crypto",
+   "tensorflow"
+  ]
+ },
+ "chip": {
+  "part": "NRF52840",
+  "family": "NRF52",
+  "package": "AQFN73",
+  "ram": 256,
+  "flash": 1024,
+  "speed": 64,
+  "usart": 2,
+  "spi": 1,
+  "i2c": 1,
+  "adc": 1,
+  "dac": 0,
+  "saved_code": {
+   "page_size": 4096,
+   "flash_available": 752,
+   "address": 1610612736,
+   "pages": 2048
+  }
+ },
+ "devices": {
+  "BTN1": {
+   "pin": "D17",
+   "pinstate": "IN_PULLDOWN"
+  },
+  "LED1": {
+   "pin": "D8",
+   "novariable": true
+  },
+  "LCD": {
+   "width": 176,
+   "height": 176,
+   "bpp": 3,
+   "controller": "LPM013M126",
+   "pin_cs": "D5",
+   "pin_extcomin": "D6",
+   "pin_disp": "D7",
+   "pin_sck": "D26",
+   "pin_mosi": "D27",
+   "pin_bl": "D8"
+  },
+  "TOUCH": {
+   "device": "CTS816S",
+   "addr": 21,
+   "pin_sda": "D33",
+   "pin_scl": "D34",
+   "pin_rst": "D35",
+   "pin_irq": "D36"
+  },
+  "VIBRATE": {
+   "pin": "D19"
+  },
+  "GPS": {
+   "device": "Casic URANUS",
+   "pin_en": "D29",
+   "pin_rx": "D30",
+   "pin_tx": "D31"
+  },
+  "BAT": {
+   "pin_charging": "D23",
+   "pin_voltage": "D3"
+  },
+  "HEARTRATE": {
+   "device": "VC31",
+   "addr": 51,
+   "pin_sda": "D24",
+   "pin_scl": "D32",
+   "pin_en": "D21",
+   "pin_int": "D22"
+  },
+  "ACCEL": {
+   "device": "KX023",
+   "addr": 30,
+   "pin_sda": "D38",
+   "pin_scl": "D37"
+  },
+  "MAG": {
+   "device": "UNKNOWN_0C",
+   "addr": 12,
+   "pin_sda": "D44",
+   "pin_scl": "D45"
+  },
+  "PRESSURE": {
+   "device": "BMP280",
+   "addr": 118,
+   "pin_sda": "D47",
+   "pin_scl": "D2"
+  },
+  "SPIFLASH": {
+   "pin_cs": "D14",
+   "pin_sck": "D16",
+   "pin_mosi": "D15",
+   "pin_miso": "D13",
+   "size": 8388608,
+   "memmap_base": 1610612736
+  }
+ },
+ "pins": [
+  {
+   "name": "D0",
+   "port": "D",
+   "num": "0",
+   "sortingname": "D00",
+   "functions": {
+    "XL1": 0,
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D1",
+   "port": "D",
+   "num": "1",
+   "sortingname": "D01",
+   "functions": {
+    "XL2": 0,
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D2",
+   "port": "D",
+   "num": "2",
+   "sortingname": "D02",
+   "functions": {
+    "ADC1_IN0": 0,
+    "3.3": 0,
+    "PRESSURE": "pin_scl"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "ADC": [
+     "ADC1_IN0"
+    ]
+   }
+  },
+  {
+   "name": "D3",
+   "port": "D",
+   "num": "3",
+   "sortingname": "D03",
+   "functions": {
+    "ADC1_IN1": 0,
+    "3.3": 0,
+    "BAT": "pin_voltage"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "ADC": [
+     "ADC1_IN1"
+    ]
+   }
+  },
+  {
+   "name": "D4",
+   "port": "D",
+   "num": "4",
+   "sortingname": "D04",
+   "functions": {
+    "ADC1_IN2": 0,
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {
+    "ADC": [
+     "ADC1_IN2"
+    ]
+   }
+  },
+  {
+   "name": "D5",
+   "port": "D",
+   "num": "5",
+   "sortingname": "D05",
+   "functions": {
+    "ADC1_IN3": 0,
+    "3.3": 0,
+    "LCD": "pin_cs"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "ADC": [
+     "ADC1_IN3"
+    ],
+    "DEVICE": [
+     "LCD"
+    ]
+   }
+  },
+  {
+   "name": "D6",
+   "port": "D",
+   "num": "6",
+   "sortingname": "D06",
+   "functions": {
+    "3.3": 0,
+    "LCD": "pin_extcomin"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "DEVICE": [
+     "LCD"
+    ]
+   }
+  },
+  {
+   "name": "D7",
+   "port": "D",
+   "num": "7",
+   "sortingname": "D07",
+   "functions": {
+    "3.3": 0,
+    "LCD": "pin_disp"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "DEVICE": [
+     "LCD"
+    ]
+   }
+  },
+  {
+   "name": "D8",
+   "port": "D",
+   "num": "8",
+   "sortingname": "D08",
+   "functions": {
+    "3.3": 0,
+    "LCD": "pin_bl"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "DEVICE": [
+     "LCD"
+    ]
+   }
+  },
+  {
+   "name": "D9",
+   "port": "D",
+   "num": "9",
+   "sortingname": "D09",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D10",
+   "port": "D",
+   "num": "10",
+   "sortingname": "D10",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D11",
+   "port": "D",
+   "num": "11",
+   "sortingname": "D11",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D12",
+   "port": "D",
+   "num": "12",
+   "sortingname": "D12",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D13",
+   "port": "D",
+   "num": "13",
+   "sortingname": "D13",
+   "functions": {
+    "3.3": 0,
+    "SPIFLASH": "pin_miso"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D14",
+   "port": "D",
+   "num": "14",
+   "sortingname": "D14",
+   "functions": {
+    "3.3": 0,
+    "SPIFLASH": "pin_cs"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D15",
+   "port": "D",
+   "num": "15",
+   "sortingname": "D15",
+   "functions": {
+    "3.3": 0,
+    "SPIFLASH": "pin_mosi"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D16",
+   "port": "D",
+   "num": "16",
+   "sortingname": "D16",
+   "functions": {
+    "3.3": 0,
+    "SPIFLASH": "pin_sck"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D17",
+   "port": "D",
+   "num": "17",
+   "sortingname": "D17",
+   "functions": {
+    "NEGATED": 0,
+    "3.3": 0,
+    "BTN1": "pin"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "DEVICE": [
+     "BTN1"
+    ]
+   }
+  },
+  {
+   "name": "D18",
+   "port": "D",
+   "num": "18",
+   "sortingname": "D18",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D19",
+   "port": "D",
+   "num": "19",
+   "sortingname": "D19",
+   "functions": {
+    "3.3": 0,
+    "VIBRATE": "pin"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D20",
+   "port": "D",
+   "num": "20",
+   "sortingname": "D20",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D21",
+   "port": "D",
+   "num": "21",
+   "sortingname": "D21",
+   "functions": {
+    "3.3": 0,
+    "HEARTRATE": "pin_en"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D22",
+   "port": "D",
+   "num": "22",
+   "sortingname": "D22",
+   "functions": {
+    "3.3": 0,
+    "HEARTRATE": "pin_int"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D23",
+   "port": "D",
+   "num": "23",
+   "sortingname": "D23",
+   "functions": {
+    "3.3": 0,
+    "BAT": "pin_charging"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D24",
+   "port": "D",
+   "num": "24",
+   "sortingname": "D24",
+   "functions": {
+    "3.3": 0,
+    "HEARTRATE": "pin_sda"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D25",
+   "port": "D",
+   "num": "25",
+   "sortingname": "D25",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D26",
+   "port": "D",
+   "num": "26",
+   "sortingname": "D26",
+   "functions": {
+    "3.3": 0,
+    "LCD": "pin_sck"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "DEVICE": [
+     "LCD"
+    ]
+   }
+  },
+  {
+   "name": "D27",
+   "port": "D",
+   "num": "27",
+   "sortingname": "D27",
+   "functions": {
+    "3.3": 0,
+    "LCD": "pin_mosi"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "DEVICE": [
+     "LCD"
+    ]
+   }
+  },
+  {
+   "name": "D28",
+   "port": "D",
+   "num": "28",
+   "sortingname": "D28",
+   "functions": {
+    "ADC1_IN4": 0,
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {
+    "ADC": [
+     "ADC1_IN4"
+    ]
+   }
+  },
+  {
+   "name": "D29",
+   "port": "D",
+   "num": "29",
+   "sortingname": "D29",
+   "functions": {
+    "ADC1_IN5": 0,
+    "3.3": 0,
+    "GPS": "pin_en"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "ADC": [
+     "ADC1_IN5"
+    ]
+   }
+  },
+  {
+   "name": "D30",
+   "port": "D",
+   "num": "30",
+   "sortingname": "D30",
+   "functions": {
+    "ADC1_IN6": 0,
+    "3.3": 0,
+    "GPS": "pin_rx"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "ADC": [
+     "ADC1_IN6"
+    ]
+   }
+  },
+  {
+   "name": "D31",
+   "port": "D",
+   "num": "31",
+   "sortingname": "D31",
+   "functions": {
+    "ADC1_IN7": 0,
+    "3.3": 0,
+    "GPS": "pin_tx"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "ADC": [
+     "ADC1_IN7"
+    ]
+   }
+  },
+  {
+   "name": "D32",
+   "port": "D",
+   "num": "32",
+   "sortingname": "D32",
+   "functions": {
+    "3.3": 0,
+    "HEARTRATE": "pin_scl"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D33",
+   "port": "D",
+   "num": "33",
+   "sortingname": "D33",
+   "functions": {
+    "3.3": 0,
+    "TOUCH": "pin_sda"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D34",
+   "port": "D",
+   "num": "34",
+   "sortingname": "D34",
+   "functions": {
+    "3.3": 0,
+    "TOUCH": "pin_scl"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D35",
+   "port": "D",
+   "num": "35",
+   "sortingname": "D35",
+   "functions": {
+    "3.3": 0,
+    "TOUCH": "pin_rst"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D36",
+   "port": "D",
+   "num": "36",
+   "sortingname": "D36",
+   "functions": {
+    "3.3": 0,
+    "TOUCH": "pin_irq"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D37",
+   "port": "D",
+   "num": "37",
+   "sortingname": "D37",
+   "functions": {
+    "3.3": 0,
+    "ACCEL": "pin_scl"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "DEVICE": [
+     "ACCEL"
+    ]
+   }
+  },
+  {
+   "name": "D38",
+   "port": "D",
+   "num": "38",
+   "sortingname": "D38",
+   "functions": {
+    "3.3": 0,
+    "ACCEL": "pin_sda"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "DEVICE": [
+     "ACCEL"
+    ]
+   }
+  },
+  {
+   "name": "D39",
+   "port": "D",
+   "num": "39",
+   "sortingname": "D39",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D40",
+   "port": "D",
+   "num": "40",
+   "sortingname": "D40",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D41",
+   "port": "D",
+   "num": "41",
+   "sortingname": "D41",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D42",
+   "port": "D",
+   "num": "42",
+   "sortingname": "D42",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D43",
+   "port": "D",
+   "num": "43",
+   "sortingname": "D43",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D44",
+   "port": "D",
+   "num": "44",
+   "sortingname": "D44",
+   "functions": {
+    "3.3": 0,
+    "MAG": "pin_sda"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "DEVICE": [
+     "MAG"
+    ]
+   }
+  },
+  {
+   "name": "D45",
+   "port": "D",
+   "num": "45",
+   "sortingname": "D45",
+   "functions": {
+    "3.3": 0,
+    "MAG": "pin_scl"
+   },
+   "csv": {},
+   "simplefunctions": {
+    "DEVICE": [
+     "MAG"
+    ]
+   }
+  },
+  {
+   "name": "D46",
+   "port": "D",
+   "num": "46",
+   "sortingname": "D46",
+   "functions": {
+    "3.3": 0
+   },
+   "csv": {},
+   "simplefunctions": {}
+  },
+  {
+   "name": "D47",
+   "port": "D",
+   "num": "47",
+   "sortingname": "D47",
+   "functions": {
+    "3.3": 0,
+    "PRESSURE": "pin_sda"
+   },
+   "csv": {},
+   "simplefunctions": {}
+  }
+ ],
+ "peripherals": {
+  "ADC": {
+   "": [
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "D28",
+    "D29",
+    "D30",
+    "D31"
+   ]
+  },
+  "DEVICE": {
+   "": [
+    "D5",
+    "D6",
+    "D7",
+    "D8",
+    "D17",
+    "D26",
+    "D27",
+    "D37",
+    "D38",
+    "D44",
+    "D45"
+   ]
+  }
+ }
+}

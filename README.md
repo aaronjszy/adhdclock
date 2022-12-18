@@ -20,7 +20,6 @@ require("Storage").write("adhdclock.info",{
 ```
 
 ## TODO
-  - Autoselect events when their alarms fire
   - Create a better solution for when there are no events or no upcoming events - maybe a special event that always sorts to the end that just shows the time
     - Also might be good to show it when its a long time to the next event
   - When the timer is within x minutes, show seconds

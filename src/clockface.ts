@@ -7,6 +7,9 @@ export class ClockFace {
     private eventsObj: CalendarEvents;
     private clockInterval: ClockInterval;
 
+    static X = 176*0.5;
+    static Y = 176*0.75;
+
     constructor(eventsObj: CalendarEvents) {
         this.eventsObj = eventsObj;
         this.clockInterval = new ClockInterval(() => {
@@ -19,25 +22,41 @@ export class ClockFace {
         
         g.reset();
         g.clearRect({x: 0, y: 24, x2: g.getHeight(), y2: g.getWidth()});
-
-        var now = new EventDate();
-        var e = this.eventsObj.getSelectedEvent();
-
-        var X = 176*0.5;
-        var Y = 176*0.75;
-
         g.reset();
 
-        // Draw current time
+        var e = this.eventsObj.getSelectedEvent();
+        if(e) {
+            this.drawEventCard(e);
+        } else {
+            this.drawNoEventCard();
+        }
+    }
+
+    private drawNoEventCard() {
         g.setFontAlign(0,1);
 
+        // Event name
         g.setFont("Vector", 20);
-        g.drawString(e.displayName(), X, Y-60, false);
+        g.drawString("No Events", ClockFace.X, ClockFace.Y-60, false);
 
+        // Time to event
+        g.setFont("Vector", 40);
+        g.drawString((new EventDate()).formattedTime(), ClockFace.X, ClockFace.Y, false);
+    }
+
+    private drawEventCard(e: CalendarEvent) {
+        var now = new EventDate();
+
+        g.setFontAlign(0,1);
+
+        // Event name
+        g.setFont("Vector", 20);
+        g.drawString(e.displayName(), ClockFace.X, ClockFace.Y-60, false);
+
+        // Time to event
         g.setFont("Vector", 40);
         var timeRemaining = e.displayTimeRemaining()
-        // var strMetrics = g.stringMetrics(timeRemaining);
-        g.drawString(timeRemaining, X, Y, false);
+        g.drawString(timeRemaining, ClockFace.X, ClockFace.Y, false);
 
         // if(showSeconds) {
         //     g.setFont("Vector", 22);
@@ -45,20 +64,21 @@ export class ClockFace {
         //     g.drawString(e.displaySecondsRemaining(), X+(strMetrics.width/2)+3, Y-4, false);
         // }
 
+        require("FontDennis8").add(Graphics);
+        g.setFont("Dennis8", 2);
+        
+        // Current time
+        g.setFontAlign(-1, 1);
         var leftTime = now.formattedTime();
+        g.drawString(leftTime, 5, g.getHeight()-2, true);
+        
+        // Event start and end time
+        g.setFontAlign(1, 1);
         var rightTime = e.getTrackedEventDate().formattedTime();
-
         var midTime = e.startTime.formattedTime() + "/";
         if(midTime == rightTime || e.getTrackedEventBoundary() == TrackedEventBoundary.START) {
             midTime = "";
         }
-
-        // Draw event info
-        require("FontDennis8").add(Graphics);
-        g.setFont("Dennis8", 2);
-        g.setFontAlign(-1, 1);
-        g.drawString(leftTime, 5, g.getHeight()-2, true);
-        g.setFontAlign(1, 1);
         g.drawString(midTime + rightTime, g.getWidth()-5, g.getHeight()-2, true);
 
         (new Meter(e)).draw();
