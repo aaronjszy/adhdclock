@@ -1,7 +1,38 @@
 import { ClockFace } from './clockface';
 import { CalendarEvents } from './calendarevents';
+import { CalendarUpdater } from './calendarupdate';
+import { EventDate } from "./date";
+import { reportEvent } from './util';
 
 export function setupBangleEvents(clockFace: ClockFace, eventsObj: CalendarEvents) {
+    var originalGB = global.GB;
+    global.GB = function(j: any) {
+      switch (j.t) {
+        case "calendar":
+            reportEvent("+" + j.id + ": " + j.title + " " + new EventDate(j.timestamp*1000).string());
+            eventsObj.addCalendarEvent(j);
+            eventsObj.organize();
+            clockFace.redrawAll();
+            break;
+        case "calendar-":
+            reportEvent("-" + j.id);
+            eventsObj.removeCalendarEvent(j.id);
+            eventsObj.organize();
+            clockFace.redrawAll();
+            break;
+      }
+      
+      if (originalGB) originalGB(j);
+    };
+
+    setTimeout(function() {
+        (new CalendarUpdater(clockFace, eventsObj)).readCalendarDataAndUpdate();
+    }, 1000*10); // After 10 seconds
+
+    setInterval(function() {
+        (new CalendarUpdater(clockFace, eventsObj)).readCalendarDataAndUpdate();
+    }, 1000*60*60) // Hourly
+
     // When button is pressed save state and open the launcher
     setWatch(() => {
         eventsObj.save();
